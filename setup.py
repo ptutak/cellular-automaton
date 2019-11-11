@@ -13,14 +13,14 @@ def get_version():
         return version_pattern.findall(f.read())[-1]
 
 
-setup(name='cellular-automaton',
+setup(name='cellular_automaton',
       version=get_version(),
       description='The description',
       long_description=readme(),
       url='http://github.com/ptutak/cellular-automaton',
       author='Piotr Tutak',
       author_email='piotr.tutak@email.address.com',
-      packages=['cellular-automaton'],
+      packages=['cellular_automaton'],
       install_requires=[],
       test_suite='nose.collector',
       tests_require=['nose'],

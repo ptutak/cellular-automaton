@@ -1,2 +1,2 @@
-# cellular-automaton
-    Initial README.md for cellular-automaton
+# cellular_automaton
+    Initial README.md for cellular_automaton
