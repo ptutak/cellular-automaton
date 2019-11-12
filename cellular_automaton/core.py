@@ -1,10 +1,12 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
+
 class Neighborhood(ABC):
     @abstractmethod
     def get_neighbors(self, index):
         pass
+
 
 class MooreNeighborhood(Neighborhood):
     def get_neighbors(self, index):
@@ -48,24 +50,45 @@ class SimpleStateSolver(StateSolver):
         return 0
 
 
+class Boundary(ABC):
+    @abstractmethod
+    def get_index(self):
+        pass
+
+
+class PeriodicBoundary(Boundary):
+    def get_index(self, index, height, width):
+        index_0 = index[0]
+        index_1 = index[1]
+        if index_0 < 0 or index_0 >= height:
+            index_0 = (index_0 + height) % height
+        if index_1 < 0  or index_1 >= width:
+            index_1 = (index_1 + width) % width
+        return (index_0, index_1)
+
+
 class Solver:
-    def __init__(self, neighborhood, state_solver):
+    def __init__(self, neighborhood, state_solver, boundary):
         self._neighborhood = neighborhood
         self._state_solver = state_solver
+        self._boundary = boundary
+
+    def _get_neighbor_values(self, array, index):
+        height = len(array)
+        width = len(array[0])
+        return (
+            array[self._boundary.get_index(x, height, width)]
+            for x in self._neighborhood.get_neighbors(index))
 
     def next_step(self, array):
+        height = len(array)
+        width = len(array[0])
         elements = (
-            (x, y) for x in range(len(array)) for y in range(len(array[0])))
+            (x, y) for x in range(height) for y in range(width))
         element_neighbors = (
-            (x, (array[index] for index in self._neighborhood.get_neighbors(x)))
+            (x, self._get_neighbor_values(array, x))
             for x in elements)
         new_elements = (
             self._state_solver.get_next_state(array[elem], neighborhood)
             for elem, neighborhood in element_neighbors)
-        dummy_array = np.array([
-            [0,0,0,0],
-            [0,1,1,1],
-            [0,1,1,1],
-            [0,1,1,1]
-        ])
-        return dummy_array
+        return np.fromiter(new_elements, int).reshape(height, width)

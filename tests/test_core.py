@@ -13,7 +13,8 @@ class TestSolver:
     def test_next_step(self):
         neighborhood = core.MooreNeighborhood()
         state_solver = core.SimpleStateSolver()
-        solver = core.Solver(neighborhood, state_solver)
+        boundary = core.PeriodicBoundary()
+        solver = core.Solver(neighborhood, state_solver, boundary)
         array = np.array([
             [0,0,0,0],
             [0,0,0,0],
@@ -25,6 +26,19 @@ class TestSolver:
             [0,1,1,1],
             [0,1,1,1],
             [0,1,1,1]]))
+
+    def test_get_neighbor_values(self):
+        neighborhood = core.MooreNeighborhood()
+        state_solver = core.SimpleStateSolver()
+        boundary = core.PeriodicBoundary()
+        solver = core.Solver(neighborhood, state_solver, boundary)
+        array = np.array([
+            [0,0,0],
+            [1,0,0],
+            [0,1,0]
+        ])
+        values = [0,0,1,0,0,0,1,0]
+        assert values == list(solver._get_neighbor_values(array, (0,0)))
 
 
 class TestStateSolver:
@@ -40,3 +54,12 @@ class TestStateSolver:
         state_solver = core.SimpleStateSolver()
         new_state = state_solver.get_next_state(array[(1,1)], neighbors_1_1)
         assert new_state == 1
+
+
+class TestPeriodicBoundary:
+    def test_get_boundary(self):
+        boundary = core.PeriodicBoundary()
+        height = 100
+        width = 50
+        assert (99, 49) == boundary.get_index((-1, -1), height, width)
+        assert (0, 0) == boundary.get_index((100, 50), height, width)
