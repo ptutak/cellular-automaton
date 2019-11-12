@@ -7,6 +7,12 @@ class TestNeighborhood:
         neighbors = set(moore.get_neighbors((1,1)))
         valid_neighbors = {(0,0), (0,1), (0,2), (1,0), (1,2), (2,0), (2,1), (2,2)}
         assert neighbors == valid_neighbors
+        try:
+            moore.get_neighbors((1,1,1))
+        except TypeError:
+            assert True
+        else:
+            assert False
 
 
 class TestSolver:
@@ -63,3 +69,4 @@ class TestPeriodicBoundary:
         width = 50
         assert (99, 49) == boundary.get_index((-1, -1), height, width)
         assert (0, 0) == boundary.get_index((100, 50), height, width)
+        assert (5, 5) == boundary.get_index((5, 5), height, width)
