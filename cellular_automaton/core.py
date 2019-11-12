@@ -85,10 +85,10 @@ class Solver:
         width = len(array[0])
         elements = (
             (x, y) for x in range(height) for y in range(width))
-        element_neighbors = (
+        element_and_neighbors = (
             (x, self._get_neighbor_values(array, x))
             for x in elements)
         new_elements = (
             self._state_solver.get_next_state(array[elem], neighborhood)
-            for elem, neighborhood in element_neighbors)
+            for elem, neighborhood in element_and_neighbors)
         return np.fromiter(new_elements, int).reshape(height, width)
