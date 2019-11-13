@@ -157,14 +157,19 @@ class MainController:
 
     def _calculus_loop(self):
         while True:
+            with self._solver_lock:
+                new_array = self._solver.next_step(self._array)
             with self._array_lock:
-                with self._solver_lock:
-                    new_array = self._solver.next_step(self._array)
                 self._array = new_array
-                with self._loop_lock:
-                    if not self._loop:
-                        break
-                sleep(self._delay)
+            with self._loop_lock:
+                if not self._loop:
+                    break
+            sleep(self._delay)
+
+    def array_generator(self):
+        while True:
+            with self._array_lock:
+                yield self._array
 
     def update_solver(self, neighborhood, boundary, state="left-standard"):
         with self._solver_lock:
