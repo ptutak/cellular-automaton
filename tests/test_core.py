@@ -14,13 +14,24 @@ class TestNeighborhood:
         else:
             assert False
 
+    def test_neumann(self):
+        neumann = core.NeumannNeighborhood()
+        neighbors = set(neumann.get_neighbors((1,1)))
+        valid_neighbors = {(0,1), (1,0), (1,2), (2,1)}
+        assert neighbors == valid_neighbors
+        try:
+            neumann.get_neighbors((1,1,1))
+        except TypeError:
+            assert True
+        else:
+            assert False
 
 class TestSolver:
     def test_next_step(self):
         neighborhood = core.MooreNeighborhood()
         state_solver = core.SimpleStateSolver()
         boundary = core.PeriodicBoundary()
-        solver = core.Solver(neighborhood, state_solver, boundary)
+        solver = core.Solver(neighborhood, boundary, state_solver)
         array = np.array([
             [0,0,0,0],
             [0,0,0,0],
@@ -37,7 +48,7 @@ class TestSolver:
         neighborhood = core.MooreNeighborhood()
         state_solver = core.SimpleStateSolver()
         boundary = core.PeriodicBoundary()
-        solver = core.Solver(neighborhood, state_solver, boundary)
+        solver = core.Solver(neighborhood, boundary, state_solver)
         array = np.array([
             [0,0,0],
             [1,0,0],
@@ -67,6 +78,39 @@ class TestPeriodicBoundary:
         boundary = core.PeriodicBoundary()
         height = 100
         width = 50
-        assert (99, 49) == boundary.get_index((-1, -1), height, width)
-        assert (0, 0) == boundary.get_index((100, 50), height, width)
-        assert (5, 5) == boundary.get_index((5, 5), height, width)
+        array = np.eye(100, 50, 0, int)
+        assert 0 == boundary.get_value((-1, -1), array, height, width)
+        assert 1 == boundary.get_value((100, 50), array, height, width)
+        assert 1 == boundary.get_value((5, 5), array, height, width)
+
+
+class TestAbsorbBoundary:
+    def test_get_boundary(self):
+        boundary = core.AbsorbBoundary()
+        height = 100
+        width = 50
+        array = np.eye(100, 50, 0, int)
+        assert 0 == boundary.get_value((-1, -1), array, height, width)
+        assert 0 == boundary.get_value((100, 50), array, height, width)
+        assert 1 == boundary.get_value((5, 5), array, height, width)
+
+
+class TestSolverCreator:
+    def test_create(self):
+        creator = core.SolverCreator()
+        solver = creator.create("Moore", "periodic")
+        assert isinstance(solver._neighborhood, core.MooreNeighborhood)
+        assert isinstance(solver._boundary, core.PeriodicBoundary)
+        assert isinstance(solver._state_solver, core.SimpleStateSolver)
+
+
+class TestMainController:
+    def test_update_solver(self):
+        controller = core.MainController()
+        controller.update_solver("Neumann", "absorb")
+        assert isinstance(
+            controller._solver._neighborhood,
+            core.NeumannNeighborhood)
+        assert isinstance(
+            controller._solver._boundary,
+            core.AbsorbBoundary)
