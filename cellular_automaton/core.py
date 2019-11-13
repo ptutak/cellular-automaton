@@ -1,5 +1,7 @@
 import numpy as np
+import threading
 from abc import ABC, abstractmethod
+from time import sleep
 import cellular_automaton.gui as gui
 
 class Neighborhood(ABC):
@@ -145,18 +147,41 @@ class MainController:
     def __init__(self):
         self._solver_creator = SolverCreator()
         self._array = np.zeros((50, 100), int)
+        self._array_lock = threading.Lock()
         self._loop = False
+        self._loop_lock = threading.Lock()
         self._solver = self._solver_creator.create("Moore", "periodic")
+        self._solver_lock = threading.Lock()
+        self._thread = None
+        self._delay = 0.1
+
+    def _calculus_loop(self):
+        while True:
+            with self._array_lock:
+                with self._solver_lock:
+                    new_array = self._solver.next_step(self._array)
+                self._array = new_array
+                with self._loop_lock:
+                    if not self._loop:
+                        break
+                sleep(self._delay)
 
     def update_solver(self, neighborhood, boundary, state="left-standard"):
-        self._solver = self._solver_creator.create(
-            neighborhood,
-            boundary,
-            state)
+        with self._solver_lock:
+            self._solver = self._solver_creator.create(
+                neighborhood,
+                boundary,
+                state)
 
-    def run(self):
-        pass
-
+    def start_stop(self):
+        with self._loop_lock:
+            if not self._loop:
+                self._loop = True
+                self._thread = threading.Thread(target=self._calculus_loop)
+                self._thread.start()
+            else:
+                self._loop = False
+                self._thread.join()
 
 def main():
     pass

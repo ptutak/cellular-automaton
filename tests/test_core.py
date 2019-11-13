@@ -114,3 +114,8 @@ class TestMainController:
         assert isinstance(
             controller._solver._boundary,
             core.AbsorbBoundary)
+
+    def test_get_array(self):
+        controller = core.MainController()
+        good_array = np.zeros((50, 100), int)
+        assert np.array_equal(good_array, controller.get_array())

@@ -1,3 +1,4 @@
+from time import sleep
 import cellular_automaton.gui as gui
 
 class TestMenu:
