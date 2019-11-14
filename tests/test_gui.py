@@ -1,7 +1,13 @@
 from time import sleep
 import cellular_automaton.gui as gui
+import numpy as np
+from unittest.mock import patch, MagicMock
 
-class TestMenu:
-    def test_start_stop_action(self):
-        ui = gui.Menu(None)
-        assert ui.startStopBtnAction(None)
+
+class TestView:
+    def test_update(self):
+        view = gui.View(np.zeros((3,3), dtype=np.int32))
+        view.panel = MagicMock()
+        with patch('cellular_automaton.gui.ImageTk') as mocked_image:
+            view.update(np.zeros((4, 4), dtype=np.int32))
+        assert mocked_image.mock_calls[0]

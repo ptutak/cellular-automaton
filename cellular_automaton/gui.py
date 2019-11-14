@@ -1,5 +1,7 @@
+import asyncio
 import tkinter as tk
 import tkinter.ttk as ttk
+import threading
 from time import sleep
 from PIL import Image, ImageTk
 
@@ -49,6 +51,14 @@ class RadioNeighBoundMenu(tk.Frame):
         self.radioOptPeriodic.grid(row=1, column=2, sticky=tk.W)
         self.radioOptAbsorb.grid(row=2, column=2, sticky=tk.W)
 
+        self.delayVar = tk.DoubleVar(self)
+        self.delayVar.set(0.2)
+        self.label_3 = tk.Label(self, text="Delay:")
+        self.label_3.grid(row=3, column=0, sticky=tk.W)
+        self.delayEntry = tk.Entry(self, textvariable=self.delayVar)
+        self.delayEntry.grid(row=3, column=2, sticky=tk.W)
+
+
 
 class SizeGrainMenu(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -76,8 +86,9 @@ class SizeGrainMenu(tk.Frame):
 
 
 class Menu(tk.Frame):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, controller, *args, **kwargs):
+        super().__init__(controller, *args, **kwargs)
+        self._controller = controller
 
         self.startStopBtn = tk.Button(self, text='Start/Stop', width=8)
         self.startStopBtn.grid(row=0, column=0)
@@ -89,20 +100,28 @@ class Menu(tk.Frame):
         self.saveBtn = tk.Button(self, text='Save', width=8)
         self.saveBtn.grid(row=0, column=2)
 
-        self.seedBtn = tk.Button(self, text="Update", width=8)
-        self.seedBtn.grid(row=1, column=0)
+        self.updateBtn = tk.Button(self, text="Update Solver", width=8)
+        self.updateBtn.grid(row=1, column=0)
+        self.updateBtn.bind('<Button-1>', self.updateBtnAction)
 
-        self.seedBtn = tk.Button(self, text="Reset", width=8)
-        self.seedBtn.grid(row=1, column=1)
-
+        self.resetBtn = tk.Button(self, text="Reset", width=8)
+        self.resetBtn.grid(row=1, column=1)
+        self.resetBtn.bind('<Button-1>', self.resetBtnAction)
 
     def startStopBtnAction(self, event):
-        return True
+        self._controller.start_stop()
+
+    def updateBtnAction(self, event):
+        self._controller.update()
+
+    def resetBtnAction(self, event):
+        self._controller.reset()
 
 
 class Body(tk.Frame):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, controller, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._controller = controller
         self.menu = Menu(self)
         self.menu.grid(row=0, column=0, sticky=tk.W+tk.E)
         self.menu.columnconfigure(0, weight=1)
@@ -124,24 +143,31 @@ class Body(tk.Frame):
         self.sizeGrainMenu.columnconfigure(0, weight=1)
         self.sizeGrainMenu.columnconfigure(1, weight=1)
 
+    def start_stop(self):
+        self._controller.start_stop()
+
+    def reset(self):
+        seed_number = self.sizeGrainMenu.seedNumVar.get()
+        height = self.sizeGrainMenu.heightNumVar.get()
+        width = self.sizeGrainMenu.widthNumVar.get()
+        self._controller.reset(width, height, seed_number)
+        self._controller.start_stop()
+        self._controller.start_stop()
+
+    def update(self):
+        boundary = self.radioMenu.boundaryVar.get()
+        neighborhood = self.radioMenu.neighborhoodVar.get()
+        self._controller.update_solver(neighborhood, boundary)
+
 
 class View(tk.Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        array = np.zeros(())
-        img = Image.fromarray(array, 'CMYK')
-        imgTk = ImageTk.PhotoImage(image=img)
-        self.label = tk.Label(self, image=imgTk)
-        self.label.image = imgTk
-        self.label.grid(row=0, column=0)
+        self._image = None
+        self.panel = tk.Label(self)
+        self.panel.grid(row=0, column=0)
 
-
-if __name__ == '__main__':
-    root = tk.Tk()
-    body = Body(root)
-    body.grid(row=0, column=0, sticky=tk.N + tk.W + tk.S + tk.E)
-    body.columnconfigure(0, weight=1)
-    view = View(root)
-    view.grid(row=0, column=1, sticky=tk.N + tk.W + tk.S + tk.E)
-    root.columnconfigure(0, weight=1)
-    root.mainloop()
+    def update(self, array):
+        image = Image.fromarray(array, 'CMYK')
+        self._image = ImageTk.PhotoImage(image=image)
+        self.panel.configure(image=self._image)

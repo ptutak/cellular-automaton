@@ -152,6 +152,10 @@ class MainController:
         self._solver_lock = threading.Lock()
         self._int_min = np.iinfo(np.int32).min
         self._int_max = np.iinfo(np.int32).max
+        self._loop = threading.Event()
+        self._loop.clear()
+        self._force_show = threading.Event()
+        self._force_show.clear()
 
     def _update_array(self, array):
         with self._array_lock:
@@ -174,10 +178,10 @@ class MainController:
             heights[:seed_num],
             widths[:seed_num],
             np.random.randint(self._int_min, self._int_max, size=seed_num, dtype=np.int32))
-        with self._array_lock:
-            self._array = np.zeros((height,width), np.int32)
-            for coords in coordinates:
-                self._array[coords[:2]] = coords[2]
+        array = np.zeros((height, width), np.int32)
+        for coords in coordinates:
+            array[coords[:2]] = coords[2]
+        self._update_array(array)
 
     def update_solver(self, neighborhood, boundary, state="left-standard"):
         with self._solver_lock:
@@ -186,12 +190,17 @@ class MainController:
                 boundary,
                 state)
 
+    def start_stop(self):
+        if self._loop.is_set():
+            self._loop.clear()
+        else:
+            self._loop.set()
 
-async def view_loop(self):
-    pass
+    def get_loop(self):
+        return self._loop
 
-def view_thread(self):
-    pass
+    def force_show(self):
+        self._force_show.set()
 
-def main():
-    pass
+    def get_force_show(self):
+        return self._force_show
