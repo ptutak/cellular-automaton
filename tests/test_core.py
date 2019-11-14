@@ -78,7 +78,7 @@ class TestPeriodicBoundary:
         boundary = core.PeriodicBoundary()
         height = 100
         width = 50
-        array = np.eye(100, 50, 0, int)
+        array = np.eye(100, 50, 0, np.int32)
         assert 0 == boundary.get_value((-1, -1), array, height, width)
         assert 1 == boundary.get_value((100, 50), array, height, width)
         assert 1 == boundary.get_value((5, 5), array, height, width)
@@ -89,7 +89,7 @@ class TestAbsorbBoundary:
         boundary = core.AbsorbBoundary()
         height = 100
         width = 50
-        array = np.eye(100, 50, 0, int)
+        array = np.eye(100, 50, 0, np.int32)
         assert 0 == boundary.get_value((-1, -1), array, height, width)
         assert 0 == boundary.get_value((100, 50), array, height, width)
         assert 1 == boundary.get_value((5, 5), array, height, width)
@@ -115,7 +115,31 @@ class TestMainController:
             controller._solver._boundary,
             core.AbsorbBoundary)
 
-    def test_get_array(self):
+    def test_array_generator(self):
         controller = core.MainController()
-        good_array = np.zeros((50, 100), int)
-        assert np.array_equal(good_array, controller.get_array())
+        arrays = controller.array_generator()
+        array = next(arrays)
+        assert np.array_equal(array, np.zeros((50, 100), np.int32))
+        array = next(arrays)
+        assert np.array_equal(array, np.zeros((50, 100), np.int32))
+
+    def test_array_update(self):
+        controller = core.MainController()
+        arrays = controller.array_generator()
+        array = next(arrays)
+        assert np.array_equal(array, np.zeros((50, 100), np.int32))
+        controller._update_array(np.ones((5, 5), np.int32))
+        array = next(arrays)
+        assert np.array_equal(array, np.ones((5, 5), np.int32))
+
+    def test_reset(self):
+        controller = core.MainController()
+        np.random.seed(7)
+        controller.reset(3, 3, 3)
+        arrays = controller.array_generator()
+        array = next(arrays)
+        good_array = np.array([
+            [0, 0, -190761369],
+            [0, 959775639, 0],
+            [2053951699, 0, 0]])
+        assert np.array_equal(array, good_array)

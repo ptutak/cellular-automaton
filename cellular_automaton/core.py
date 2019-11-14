@@ -116,7 +116,7 @@ class Solver:
         new_elements = (
             self._state_solver.get_next_state(array[elem], neighborhood)
             for elem, neighborhood in element_and_neighbors)
-        return np.fromiter(new_elements, int).reshape(height, width)
+        return np.fromiter(new_elements, np.int32).reshape(height, width)
 
 
 class SolverCreator:
@@ -146,30 +146,38 @@ class SolverCreator:
 class MainController:
     def __init__(self):
         self._solver_creator = SolverCreator()
-        self._array = np.zeros((50, 100), int)
+        self._array = np.zeros((50, 100), np.int32)
         self._array_lock = threading.Lock()
-        self._loop = False
-        self._loop_lock = threading.Lock()
         self._solver = self._solver_creator.create("Moore", "periodic")
         self._solver_lock = threading.Lock()
-        self._thread = None
-        self._delay = 0.1
+        self._int_min = np.iinfo(np.int32).min
+        self._int_max = np.iinfo(np.int32).max
 
-    def _calculus_loop(self):
-        while True:
-            with self._solver_lock:
-                new_array = self._solver.next_step(self._array)
-            with self._array_lock:
-                self._array = new_array
-            with self._loop_lock:
-                if not self._loop:
-                    break
-            sleep(self._delay)
+    def _update_array(self, array):
+        with self._array_lock:
+            self._array = array
 
     def array_generator(self):
         while True:
-            with self._array_lock:
-                yield self._array
+            with self._solver_lock:
+                with self._array_lock:
+                    array = self._array
+                    self._array = self._solver.next_step(self._array)
+            yield array
+
+    def reset(self, height, width, seed_num):
+        heights = np.arange(height)
+        np.random.shuffle(heights)
+        widths = np.arange(width)
+        np.random.shuffle(widths)
+        coordinates = zip(
+            heights[:seed_num],
+            widths[:seed_num],
+            np.random.randint(self._int_min, self._int_max, size=seed_num, dtype=np.int32))
+        with self._array_lock:
+            self._array = np.zeros((height,width), np.int32)
+            for coords in coordinates:
+                self._array[coords[:2]] = coords[2]
 
     def update_solver(self, neighborhood, boundary, state="left-standard"):
         with self._solver_lock:
@@ -178,15 +186,12 @@ class MainController:
                 boundary,
                 state)
 
-    def start_stop(self):
-        with self._loop_lock:
-            if not self._loop:
-                self._loop = True
-                self._thread = threading.Thread(target=self._calculus_loop)
-                self._thread.start()
-            else:
-                self._loop = False
-                self._thread.join()
+
+async def view_loop(self):
+    pass
+
+def view_thread(self):
+    pass
 
 def main():
     pass

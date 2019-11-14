@@ -1,6 +1,8 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from time import sleep
+from PIL import Image, ImageTk
+
 
 class RadioNeighBoundMenu(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -77,18 +79,22 @@ class Menu(tk.Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.seedBtn = tk.Button(self, text="Seed", width=8)
-        self.seedBtn.grid(row=0, column=0)
-
         self.startStopBtn = tk.Button(self, text='Start/Stop', width=8)
-        self.startStopBtn.grid(row=0, column=1)
+        self.startStopBtn.grid(row=0, column=0)
         self.startStopBtn.bind('<Button-1>', self.startStopBtnAction)
 
         self.loadBtn = tk.Button(self, text='Load', width=8)
-        self.loadBtn.grid(row=0, column=2)
+        self.loadBtn.grid(row=0, column=1)
 
         self.saveBtn = tk.Button(self, text='Save', width=8)
-        self.saveBtn.grid(row=0, column=3)
+        self.saveBtn.grid(row=0, column=2)
+
+        self.seedBtn = tk.Button(self, text="Update", width=8)
+        self.seedBtn.grid(row=1, column=0)
+
+        self.seedBtn = tk.Button(self, text="Reset", width=8)
+        self.seedBtn.grid(row=1, column=1)
+
 
     def startStopBtnAction(self, event):
         return True
@@ -99,6 +105,9 @@ class Body(tk.Frame):
         super().__init__(*args, **kwargs)
         self.menu = Menu(self)
         self.menu.grid(row=0, column=0, sticky=tk.W+tk.E)
+        self.menu.columnconfigure(0, weight=1)
+        self.menu.columnconfigure(1, weight=1)
+        self.menu.columnconfigure(2, weight=1)
 
         self.separator_0 = ttk.Separator(self)
         self.separator_0.grid(row=1, column=0, sticky=tk.W+tk.E)
@@ -116,8 +125,23 @@ class Body(tk.Frame):
         self.sizeGrainMenu.columnconfigure(1, weight=1)
 
 
+class View(tk.Frame):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        array = np.zeros(())
+        img = Image.fromarray(array, 'CMYK')
+        imgTk = ImageTk.PhotoImage(image=img)
+        self.label = tk.Label(self, image=imgTk)
+        self.label.image = imgTk
+        self.label.grid(row=0, column=0)
+
+
 if __name__ == '__main__':
     root = tk.Tk()
-    menu = Body(root)
-    menu.grid(row=0, column=0, sticky=tk.N + tk.W + tk.S + tk.E)
+    body = Body(root)
+    body.grid(row=0, column=0, sticky=tk.N + tk.W + tk.S + tk.E)
+    body.columnconfigure(0, weight=1)
+    view = View(root)
+    view.grid(row=0, column=1, sticky=tk.N + tk.W + tk.S + tk.E)
+    root.columnconfigure(0, weight=1)
     root.mainloop()
