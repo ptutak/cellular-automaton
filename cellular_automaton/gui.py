@@ -157,7 +157,9 @@ class Body(tk.Frame):
     def update(self):
         boundary = self.radioMenu.boundaryVar.get()
         neighborhood = self.radioMenu.neighborhoodVar.get()
+        delay = self.radioMenu.delayVar.get()
         self._controller.update_solver(neighborhood, boundary)
+        self._controller.update_delay(delay)
 
 
 class View(tk.Frame):
@@ -169,5 +171,6 @@ class View(tk.Frame):
 
     def update(self, array):
         image = Image.fromarray(array, 'CMYK')
+        image = image.resize((image.width*2, image.height*2))
         self._image = ImageTk.PhotoImage(image=image)
         self.panel.configure(image=self._image)

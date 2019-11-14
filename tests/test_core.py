@@ -115,6 +115,11 @@ class TestMainController:
             controller._solver._boundary,
             core.AbsorbBoundary)
 
+    def test_update_delay(self):
+        controller = core.MainController()
+        controller.update_delay(0.55)
+        assert controller.get_delay() == 0.55
+
     def test_array_generator(self):
         controller = core.MainController()
         arrays = controller.array_generator()

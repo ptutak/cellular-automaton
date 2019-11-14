@@ -154,8 +154,8 @@ class MainController:
         self._int_max = np.iinfo(np.int32).max
         self._loop = threading.Event()
         self._loop.clear()
-        self._force_show = threading.Event()
-        self._force_show.clear()
+        self._delay = None
+        self._delay_lock = threading.Lock()
 
     def _update_array(self, array):
         with self._array_lock:
@@ -199,8 +199,10 @@ class MainController:
     def get_loop(self):
         return self._loop
 
-    def force_show(self):
-        self._force_show.set()
+    def update_delay(self, delay):
+        with self._delay_lock:
+            self._delay = delay
 
-    def get_force_show(self):
-        return self._force_show
+    def get_delay(self):
+        with self._delay_lock:
+            return self._delay

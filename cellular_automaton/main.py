@@ -12,25 +12,30 @@ import cellular_automaton.gui as gui
 class Main:
     def __init__(self):
         gui_root = tk.Tk()
+
         self._controller = core.MainController()
+
         body = gui.Body(self._controller, gui_root)
         body.grid(row=0, column=0, sticky=tk.N + tk.W + tk.S + tk.E)
         body.columnconfigure(0, weight=0)
+        body.reset()
+        body.update()
+
         separator = ttk.Separator(gui_root, orient=tk.VERTICAL)
         separator.grid(row=0, column=1, sticky=tk.N + tk.S)
+
         view = gui.View(gui_root)
         view.grid(row=0, column=2, sticky=tk.N + tk.W + tk.S + tk.E)
         view.columnconfigure(0, weight=1)
         view.rowconfigure(0, weight=1)
+        view.update(next(self._controller.array_generator()))
+
         gui_root.columnconfigure(0, weight=0)
         gui_root.columnconfigure(2, weight=1)
         gui_root.rowconfigure(0, weight=1)
-        body.reset()
-        #view.update(next(self._controller.array_generator()))
-        self._body = body
+
         self._view = view
         self._gui_root = gui_root
-        self._delay = 0.2
         self._view_thread = None
         self._on = True
         self._on_lock = threading.Lock()
@@ -44,7 +49,7 @@ class Main:
                     break
             array = next(arrays)
             self._view.update(array)
-            await asyncio.sleep(self._delay)
+            await asyncio.sleep(self._controller.get_delay())
 
     def _view_main_loop(self):
         asyncio.run(self._view_async_loop())
