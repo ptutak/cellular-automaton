@@ -293,8 +293,6 @@ class MainController:
         array = []
         if filename.endswith('.csv'):
             lines = (line.strip().split(',') for line in open(filename))
-
-            for line in open(filename):
-                line.strip().split(',')
+            array.extend(lines)
         with self._array_lock:
-            self._array = array
+            self._array = np.array(array)
