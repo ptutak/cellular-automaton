@@ -1,6 +1,7 @@
 import asyncio
 import tkinter as tk
 import tkinter.ttk as ttk
+import tkinter.filedialog as filedialog
 import threading
 from time import sleep
 from PIL import Image, ImageTk
@@ -117,9 +118,11 @@ class Menu(tk.Frame):
 
         self.loadBtn = tk.Button(self, text='Load', width=8)
         self.loadBtn.grid(row=0, column=1)
+        self.loadBtn.bind('<Button-1>', self.loadBtnAction)
 
         self.saveBtn = tk.Button(self, text='Save', width=8)
         self.saveBtn.grid(row=0, column=2)
+        self.saveBtn.bind('<Button-1>', self.saveBtnAction)
 
         self.nextStepBtn = tk.Button(self, text="Next Step", width=8)
         self.nextStepBtn.grid(row=1, column=0)
@@ -147,6 +150,9 @@ class Menu(tk.Frame):
 
     def saveBtnAction(self, event):
         self._controller.save()
+
+    def loadBtnAction(self, event):
+        self._controller.load()
 
 
 class Body(tk.Frame):
@@ -181,7 +187,7 @@ class Body(tk.Frame):
         seed_number = self.sizeGrainMenu.seedNumVar.get()
         height = self.sizeGrainMenu.heightNumVar.get()
         width = self.sizeGrainMenu.widthNumVar.get()
-        self._controller.reset(width, height, seed_number)
+        self._controller.reset(height, width, seed_number)
         self._controller.start_stop()
         self._controller.start_stop()
 
@@ -197,7 +203,16 @@ class Body(tk.Frame):
         self._controller.start_stop()
 
     def save(self):
+        files = [('CSV', '*.csv')]
+        filename = filedialog.asksaveasfilename(filetypes=files)
+        if filename:
+            self._controller.save(filename)
 
+    def load(self):
+        files = [('CSV', '*.csv')]
+        filename = filedialog.askopenfilename(filetypes=files)
+        if filename:
+            self._controller.load(filename)
 
 class View(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -208,6 +223,6 @@ class View(tk.Frame):
 
     def update(self, array):
         image = Image.fromarray(array, 'CMYK')
-        image = image.resize((image.width*2, image.height*2))
+        image = image.resize((image.width*3, image.height*3))
         self._image = ImageTk.PhotoImage(image=image)
         self.panel.configure(image=self._image)

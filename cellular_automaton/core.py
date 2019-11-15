@@ -275,24 +275,16 @@ class MainController:
     def save(self, filename):
         with self._array_lock:
             array = self._array
-        height = len(array)
-        width = len(array[0])
         if filename.endswith('.csv'):
             with open(filename, 'w') as file:
                 for row in array:
-                    j = 0
-                    for elem in row:
-                        file.write("{}".format(elem))
-                        j += 1
-                        if j < width - 1:
-                            file.write(',')
+                    file.write(','.join((str(x) for x in row)))
                     file.write('\n')
 
     def load(self, filename):
-        #here load array to csv
         array = []
         if filename.endswith('.csv'):
-            lines = (line.strip().split(',') for line in open(filename))
+            lines = (line.strip().split(',') for line in open(filename) if line.strip())
             array.extend(lines)
         with self._array_lock:
-            self._array = np.array(array)
+            self._array = np.array(array, dtype=np.int32)
