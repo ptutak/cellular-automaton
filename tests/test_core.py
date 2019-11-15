@@ -26,6 +26,7 @@ class TestNeighborhood:
         else:
             assert False
 
+
 class TestSolver:
     def test_next_step(self):
         neighborhood = core.MooreNeighborhood()

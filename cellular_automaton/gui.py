@@ -100,13 +100,20 @@ class Menu(tk.Frame):
         self.saveBtn = tk.Button(self, text='Save', width=8)
         self.saveBtn.grid(row=0, column=2)
 
+        self.nextStepBtn = tk.Button(self, text="Next Step", width=8)
+        self.nextStepBtn.grid(row=1, column=0)
+        self.nextStepBtn.bind('<Button-1>', self.nextStepBtnAction)
+
         self.updateBtn = tk.Button(self, text="Update Solver", width=8)
-        self.updateBtn.grid(row=1, column=0)
+        self.updateBtn.grid(row=1, column=1)
         self.updateBtn.bind('<Button-1>', self.updateBtnAction)
 
         self.resetBtn = tk.Button(self, text="Reset", width=8)
-        self.resetBtn.grid(row=1, column=1)
+        self.resetBtn.grid(row=1, column=2)
         self.resetBtn.bind('<Button-1>', self.resetBtnAction)
+
+    def nextStepBtnAction(self, event):
+        self._controller.next_step()
 
     def startStopBtnAction(self, event):
         self._controller.start_stop()
@@ -160,6 +167,10 @@ class Body(tk.Frame):
         delay = self.radioMenu.delayVar.get()
         self._controller.update_solver(neighborhood, boundary)
         self._controller.update_delay(delay)
+
+    def next_step(self):
+        self._controller.start_stop()
+        self._controller.start_stop()
 
 
 class View(tk.Frame):

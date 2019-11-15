@@ -54,13 +54,18 @@ class SimpleStateSolver(StateSolver):
                 quantity[neighbor] = 1
         if 0 in quantity:
             del quantity[0]
-        max_neigh = None
+        max_neigh = []
         max_quantity = 0
         for neighbor, quant in quantity.items():
             if quant > max_quantity:
-                max_neigh = neighbor
+                max_neigh = [neighbor]
+            elif quant == max_quantity:
+                max_neigh.append(neighbor)
         if max_neigh:
-            return max_neigh
+            if len(max_neigh) > 1:
+                return np.random.choice(max_neigh)
+            else:
+                return max_neigh[0]
         return 0
 
 
