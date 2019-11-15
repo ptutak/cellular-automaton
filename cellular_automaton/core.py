@@ -3,6 +3,8 @@ import threading
 from abc import ABC, abstractmethod
 from time import sleep
 import cellular_automaton.gui as gui
+import csv
+
 
 class Neighborhood(ABC):
     @abstractmethod
@@ -36,6 +38,57 @@ class NeumannNeighborhood(Neighborhood):
         )
 
 
+class HexagonalLeftNeighborhood(Neighborhood):
+    def get_neighbors(self, index):
+        if len(index) > 2:
+            raise TypeError('Bad index type. Must be indexed (int, int)')
+        return (
+            (index[0] - 1, index[1]),
+            (index[0] - 1, index[1] + 1),
+            (index[0], index[1] - 1),
+            (index[0], index[1] + 1),
+            (index[0] + 1, index[1] - 1),
+            (index[0] + 1, index[1])
+        )
+
+
+class HexagonalRightNeighborhood(Neighborhood):
+    def get_neighbors(self, index):
+        if len(index) > 2:
+            raise TypeError('Bad index type. Must be indexed (int, int)')
+        return (
+            (index[0] - 1, index[1] - 1),
+            (index[0] - 1, index[1]),
+            (index[0], index[1] - 1),
+            (index[0], index[1] + 1),
+            (index[0] + 1, index[1]),
+            (index[0] + 1, index[1] + 1)
+        )
+
+
+class HexagonalRandom(Neighborhood):
+    def get_neighbors(self, index):
+        if len(index) > 2:
+            raise TypeError('Bad index type. Must be indexed (int, int)')
+        if np.random.randint(2):
+            return (
+                (index[0] - 1, index[1]),
+                (index[0] - 1, index[1] + 1),
+                (index[0], index[1] - 1),
+                (index[0], index[1] + 1),
+                (index[0] + 1, index[1] - 1),
+                (index[0] + 1, index[1])
+            )
+        return (
+            (index[0] - 1, index[1] - 1),
+            (index[0] - 1, index[1]),
+            (index[0], index[1] - 1),
+            (index[0], index[1] + 1),
+            (index[0] + 1, index[1]),
+            (index[0] + 1, index[1] + 1)
+        )
+
+
 class StateSolver(ABC):
     @abstractmethod
     def get_next_state(self, neighbors):
@@ -48,12 +101,14 @@ class SimpleStateSolver(StateSolver):
             return actual_state
         quantity = dict()
         for neighbor in neighbors:
+            if not neighbor:
+                continue
             if neighbor in quantity:
                 quantity[neighbor] += 1
             else:
                 quantity[neighbor] = 1
-        if 0 in quantity:
-            del quantity[0]
+        if not quantity:
+            return 0
         max_neigh = []
         max_quantity = 0
         for neighbor, quant in quantity.items():
@@ -66,7 +121,6 @@ class SimpleStateSolver(StateSolver):
                 return np.random.choice(max_neigh)
             else:
                 return max_neigh[0]
-        return 0
 
 
 class Boundary(ABC):
@@ -130,6 +184,12 @@ class SolverCreator:
             neighborhood = MooreNeighborhood()
         elif neighborhood == "Neumann":
             neighborhood = NeumannNeighborhood()
+        elif neighborhood == "hexagonal-left":
+            neighborhood = HexagonalLeftNeighborhood()
+        elif neighborhood == "hexagonal-right":
+            neighborhood = HexagonalRightNeighborhood()
+        elif neighborhood == "hexagonal-random":
+            neighborhood = HexagonalRandom()
         else:
             raise TypeError("No such neighborhood")
 
@@ -211,3 +271,30 @@ class MainController:
     def get_delay(self):
         with self._delay_lock:
             return self._delay
+
+    def save(self, filename):
+        with self._array_lock:
+            array = self._array
+        height = len(array)
+        width = len(array[0])
+        if filename.endswith('.csv'):
+            with open(filename, 'w') as file:
+                for row in array:
+                    j = 0
+                    for elem in row:
+                        file.write("{}".format(elem))
+                        j += 1
+                        if j < width - 1:
+                            file.write(',')
+                    file.write('\n')
+
+    def load(self, filename):
+        #here load array to csv
+        array = []
+        if filename.endswith('.csv'):
+            lines = (line.strip().split(',') for line in open(filename))
+
+            for line in open(filename):
+                line.strip().split(',')
+        with self._array_lock:
+            self._array = array
