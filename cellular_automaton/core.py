@@ -116,11 +116,10 @@ class SimpleStateSolver(StateSolver):
                 max_neigh = [neighbor]
             elif quant == max_quantity:
                 max_neigh.append(neighbor)
-        if max_neigh:
-            if len(max_neigh) > 1:
-                return np.random.choice(max_neigh)
-            else:
-                return max_neigh[0]
+        if len(max_neigh) > 1:
+            return np.random.choice(max_neigh)
+        else:
+            return max_neigh[0]
 
 
 class Boundary(ABC):
@@ -160,9 +159,13 @@ class Solver:
     def _get_neighbor_values(self, array, index):
         height = len(array)
         width = len(array[0])
+        index_value = array[index]
+        if index_value:
+            return (index_value, ())
         return (
-            self._boundary.get_value(x, array, height, width)
-            for x in self._neighborhood.get_neighbors(index))
+            index_value,
+            (self._boundary.get_value(x, array, height, width)
+             for x in self._neighborhood.get_neighbors(index)))
 
     def next_step(self, array):
         height = len(array)
@@ -170,10 +173,10 @@ class Solver:
         elements = (
             (x, y) for x in range(height) for y in range(width))
         element_and_neighbors = (
-            (x, self._get_neighbor_values(array, x))
+            self._get_neighbor_values(array, x)
             for x in elements)
         new_elements = (
-            self._state_solver.get_next_state(array[elem], neighborhood)
+            self._state_solver.get_next_state(elem, neighborhood)
             for elem, neighborhood in element_and_neighbors)
         return np.fromiter(new_elements, np.int32).reshape(height, width)
 
