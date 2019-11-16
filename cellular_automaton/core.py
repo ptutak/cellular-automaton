@@ -8,84 +8,115 @@ import csv
 
 class Neighborhood(ABC):
     @abstractmethod
-    def get_neighbors(self, index):
+    def get_neighbors(self, index_0, index_1):
         pass
 
 
 class MooreNeighborhood(Neighborhood):
-    def get_neighbors(self, index):
-        if len(index) > 2:
-            raise TypeError('Bad index type. Must be indexed (int, int)')
-        return ((index[0] - 1, index[1] - 1),
-                (index[0] - 1, index[1]),
-                (index[0] - 1, index[1] + 1),
-                (index[0], index[1] - 1),
-                (index[0], index[1] + 1),
-                (index[0] + 1, index[1] - 1),
-                (index[0] + 1, index[1]),
-                (index[0] + 1, index[1] + 1))
+    def get_neighbors(self, index_0, index_1):
+        return ((index_0 - 1, index_1 - 1),
+                (index_0 - 1, index_1),
+                (index_0 - 1, index_1 + 1),
+                (index_0, index_1 - 1),
+                (index_0, index_1 + 1),
+                (index_0 + 1, index_1 - 1),
+                (index_0 + 1, index_1),
+                (index_0 + 1, index_1 + 1))
 
 
 class NeumannNeighborhood(Neighborhood):
-    def get_neighbors(self, index):
-        if len(index) > 2:
-            raise TypeError('Bad index type. Must be indexed (int, int)')
+    def get_neighbors(self, index_0, index_1):
         return (
-            (index[0]-1, index[1]),
-            (index[0], index[1] - 1),
-            (index[0], index[1] + 1),
-            (index[0] + 1, index[1])
+            (index_0-1, index_1),
+            (index_0, index_1 - 1),
+            (index_0, index_1 + 1),
+            (index_0 + 1, index_1)
         )
 
 
 class HexagonalLeftNeighborhood(Neighborhood):
-    def get_neighbors(self, index):
-        if len(index) > 2:
-            raise TypeError('Bad index type. Must be indexed (int, int)')
+    def get_neighbors(self, index_0, index_1):
         return (
-            (index[0] - 1, index[1]),
-            (index[0] - 1, index[1] + 1),
-            (index[0], index[1] - 1),
-            (index[0], index[1] + 1),
-            (index[0] + 1, index[1] - 1),
-            (index[0] + 1, index[1])
+            (index_0 - 1, index_1),
+            (index_0 - 1, index_1 + 1),
+            (index_0, index_1 - 1),
+            (index_0, index_1 + 1),
+            (index_0 + 1, index_1 - 1),
+            (index_0 + 1, index_1)
         )
 
 
 class HexagonalRightNeighborhood(Neighborhood):
-    def get_neighbors(self, index):
-        if len(index) > 2:
-            raise TypeError('Bad index type. Must be indexed (int, int)')
+    def get_neighbors(self, index_0, index_1):
         return (
-            (index[0] - 1, index[1] - 1),
-            (index[0] - 1, index[1]),
-            (index[0], index[1] - 1),
-            (index[0], index[1] + 1),
-            (index[0] + 1, index[1]),
-            (index[0] + 1, index[1] + 1)
+            (index_0 - 1, index_1 - 1),
+            (index_0 - 1, index_1),
+            (index_0, index_1 - 1),
+            (index_0, index_1 + 1),
+            (index_0 + 1, index_1),
+            (index_0 + 1, index_1 + 1)
         )
 
 
 class HexagonalRandom(Neighborhood):
-    def get_neighbors(self, index):
-        if len(index) > 2:
-            raise TypeError('Bad index type. Must be indexed (int, int)')
+    def get_neighbors(self, index_0, index_1):
         if np.random.randint(2):
             return (
-                (index[0] - 1, index[1]),
-                (index[0] - 1, index[1] + 1),
-                (index[0], index[1] - 1),
-                (index[0], index[1] + 1),
-                (index[0] + 1, index[1] - 1),
-                (index[0] + 1, index[1])
+                (index_0 - 1, index_1),
+                (index_0 - 1, index_1 + 1),
+                (index_0, index_1 - 1),
+                (index_0, index_1 + 1),
+                (index_0 + 1, index_1 - 1),
+                (index_0 + 1, index_1)
             )
         return (
-            (index[0] - 1, index[1] - 1),
-            (index[0] - 1, index[1]),
-            (index[0], index[1] - 1),
-            (index[0], index[1] + 1),
-            (index[0] + 1, index[1]),
-            (index[0] + 1, index[1] + 1)
+            (index_0 - 1, index_1 - 1),
+            (index_0 - 1, index_1),
+            (index_0, index_1 - 1),
+            (index_0, index_1 + 1),
+            (index_0 + 1, index_1),
+            (index_0 + 1, index_1 + 1)
+        )
+
+
+class PentagonalLeft(Neighborhood):
+    def get_neighbors(self, index_0, index_1):
+        return (
+            (index_0 - 1, index_1 - 1),
+            (index_0 - 1, index_1),
+            (index_0, index_1 - 1),
+            (index_0 + 1, index_1 - 1),
+            (index_0 + 1, index_1)
+        )
+
+
+class PentagonalRight(Neighborhood):
+    def get_neighbors(self, index_0, index_1):
+        return (
+            (index_0 - 1, index_1),
+            (index_0 - 1, index_1 + 1),
+            (index_0, index_1 + 1),
+            (index_0 + 1, index_1),
+            (index_0 + 1, index_1 + 1)
+        )
+
+
+class PentagonalRandom(Neighborhood):
+    def get_neighbors(self, index_0, index_1):
+        if np.random.randint(2):
+            return (
+                (index_0 - 1, index_1 - 1),
+                (index_0 - 1, index_1),
+                (index_0, index_1 - 1),
+                (index_0 + 1, index_1 - 1),
+                (index_0 + 1, index_1)
+            )
+        return (
+            (index_0 - 1, index_1),
+            (index_0 - 1, index_1 + 1),
+            (index_0, index_1 + 1),
+            (index_0 + 1, index_1),
+            (index_0 + 1, index_1 + 1)
         )
 
 
@@ -134,7 +165,7 @@ class PeriodicBoundary(Boundary):
         index_1 = index[1]
         if index_0 < 0 or index_0 >= height:
             index_0 = (index_0 + height) % height
-        if index_1 < 0  or index_1 >= width:
+        if index_1 < 0 or index_1 >= width:
             index_1 = (index_1 + width) % width
         return array[(index_0, index_1)]
 
@@ -165,7 +196,7 @@ class Solver:
         return (
             index_value,
             (self._boundary.get_value(x, array, height, width)
-             for x in self._neighborhood.get_neighbors(index)))
+             for x in self._neighborhood.get_neighbors(index[0], index[1])))
 
     def next_step(self, array):
         height = len(array)
@@ -193,6 +224,12 @@ class SolverCreator:
             neighborhood = HexagonalRightNeighborhood()
         elif neighborhood == "hexagonal-random":
             neighborhood = HexagonalRandom()
+        elif neighborhood == "pentagonal-left":
+            neighborhood = PentagonalLeft()
+        elif neighborhood == "pentagonal-right":
+            neighborhood = PentagonalRight()
+        elif neighborhood == "pentagonal-random":
+            neighborhood = PentagonalRandom()
         else:
             raise TypeError("No such neighborhood")
 
@@ -225,7 +262,6 @@ class MainController:
         self._loop_lock = threading.Lock()
         self._delay_lock = threading.Lock()
         self._loop_gate = threading.Event()
-
 
     def _update_array(self, array):
         with self._array_lock:

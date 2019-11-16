@@ -44,14 +44,34 @@ class RadioNeighBoundMenu(tk.Frame):
             variable=self.neighborhoodVar,
             value="hexagonal-random"
         )
+        self.radioOptPentagonalLeft = tk.Radiobutton(
+            self,
+            text="pentagonal-left",
+            variable=self.neighborhoodVar,
+            value="pentagonal-left"
+        )
+        self.radioOptPentagonalRight = tk.Radiobutton(
+            self,
+            text="pentagonal-right",
+            variable=self.neighborhoodVar,
+            value="pentagonal-right"
+        )
+        self.radioOptPentagonalRandom = tk.Radiobutton(
+            self,
+            text="pentagonal-random",
+            variable=self.neighborhoodVar,
+            value="pentagonal-random"
+        )
         self.radioOptMoore.grid(row=1, column=0, sticky=tk.W)
         self.radioOptNeumann.grid(row=2, column=0, sticky=tk.W)
         self.radioOptHexagonalLeft.grid(row=3, column=0, sticky=tk.W)
         self.radioOptHexagonalRight.grid(row=4, column=0, sticky=tk.W)
         self.radioOptHexagonalRandom.grid(row=5, column=0, sticky=tk.W)
-
+        self.radioOptPentagonalLeft.grid(row=6, column=0, sticky=tk.W)
+        self.radioOptPentagonalRight.grid(row=7, column=0, sticky=tk.W)
+        self.radioOptPentagonalRandom.grid(row=8, column=0, sticky=tk.W)
         self.separator_1 = ttk.Separator(self, orient=tk.VERTICAL)
-        self.separator_1.grid(row=0, column=1, rowspan=5, sticky=tk.N+tk.S)
+        self.separator_1.grid(row=0, column=1, rowspan=9, sticky=tk.N+tk.S)
 
         self.label_2 = tk.Label(self, text="Boundary")
         self.label_2.grid(row=0, column=2, sticky=tk.W+tk.E)
@@ -76,9 +96,9 @@ class RadioNeighBoundMenu(tk.Frame):
         self.delayVar = tk.DoubleVar(self)
         self.delayVar.set(0.2)
         self.label_3 = tk.Label(self, text="Delay:")
-        self.label_3.grid(row=6, column=0, sticky=tk.W)
+        self.label_3.grid(row=9, column=0, sticky=tk.W)
         self.delayEntry = tk.Entry(self, textvariable=self.delayVar)
-        self.delayEntry.grid(row=6, column=2, sticky=tk.W)
+        self.delayEntry.grid(row=9, column=2, sticky=tk.W)
 
 
 
