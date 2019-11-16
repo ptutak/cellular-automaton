@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__) + '../../'))
 import cellular_automaton.core as core
 import cellular_automaton.gui as gui
 
+
 class Main:
     def __init__(self):
         gui_root = tk.Tk()
