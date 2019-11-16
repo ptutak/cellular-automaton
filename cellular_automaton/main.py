@@ -43,7 +43,8 @@ class Main:
     async def _view_async_loop(self):
         arrays = self._controller.array_generator()
         while True:
-            self._controller.get_loop().wait()
+            self._controller.first_control_gate()
+            self._controller.second_control_gate()
             with self._on_lock:
                 if not self._on:
                     break
@@ -60,7 +61,7 @@ class Main:
         self._gui_root.mainloop()
         with self._on_lock:
             self._on = False
-        self._controller.get_loop().set()
+        self._controller.open_gate()
         self._view_thread.join()
         return 0
 

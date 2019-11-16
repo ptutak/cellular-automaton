@@ -220,10 +220,12 @@ class MainController:
         self._solver_lock = threading.Lock()
         self._int_min = np.iinfo(np.int32).min
         self._int_max = np.iinfo(np.int32).max
-        self._loop = threading.Event()
-        self._loop.clear()
+        self._loop_on = False
         self._delay = None
+        self._loop_lock = threading.Lock()
         self._delay_lock = threading.Lock()
+        self._loop_gate = threading.Event()
+
 
     def _update_array(self, array):
         with self._array_lock:
@@ -258,14 +260,35 @@ class MainController:
                 boundary,
                 state)
 
-    def start_stop(self):
-        if self._loop.is_set():
-            self._loop.clear()
-        else:
-            self._loop.set()
+    def open_gate(self):
+        with self._loop_lock:
+            self._loop_on = True
+            self._loop_gate.set()
 
-    def get_loop(self):
-        return self._loop
+    def close_gate(self):
+        with self._loop_lock:
+            self._loop_on = False
+            self._loop_gate.clear()
+
+    def first_control_gate(self):
+        self._loop_gate.wait()
+
+    def second_control_gate(self):
+        with self._loop_lock:
+            if self._loop_gate.is_set() and not self._loop_on:
+                self._loop_gate.clear()
+
+    def next_step(self):
+        self._loop_gate.set()
+
+    def start_stop(self):
+        with self._loop_lock:
+            if self._loop_on:
+                self._loop_gate.clear()
+                self._loop_on = False
+            else:
+                self._loop_gate.set()
+                self._loop_on = True
 
     def update_delay(self, delay):
         with self._delay_lock:

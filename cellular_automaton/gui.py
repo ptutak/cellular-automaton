@@ -199,8 +199,7 @@ class Body(tk.Frame):
         self._controller.update_delay(delay)
 
     def next_step(self):
-        self._controller.start_stop()
-        self._controller.start_stop()
+        self._controller.next_step()
 
     def save(self):
         files = [('CSV', '*.csv')]
@@ -213,6 +212,8 @@ class Body(tk.Frame):
         filename = filedialog.askopenfilename(filetypes=files)
         if filename:
             self._controller.load(filename)
+        self._controller.next_step()
+
 
 class View(tk.Frame):
     def __init__(self, *args, **kwargs):
