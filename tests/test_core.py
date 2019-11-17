@@ -129,15 +129,6 @@ class TestMainController:
         array = next(arrays)
         assert np.array_equal(array, np.zeros((50, 100), np.int32))
 
-    def test_array_update(self):
-        controller = core.MainController()
-        arrays = controller.array_generator()
-        array = next(arrays)
-        assert np.array_equal(array, np.zeros((50, 100), np.int32))
-        controller._update_array(np.ones((5, 5), np.int32))
-        array = next(arrays)
-        assert np.array_equal(array, np.ones((5, 5), np.int32))
-
     def test_reset(self):
         controller = core.MainController()
         np.random.seed(7)

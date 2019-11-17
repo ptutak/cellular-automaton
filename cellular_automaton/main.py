@@ -44,8 +44,7 @@ class Main:
     async def _view_async_loop(self):
         arrays = self._controller.array_generator()
         while True:
-            self._controller.first_control_gate()
-            self._controller.second_control_gate()
+            self._controller.control_gate()
             with self._on_lock:
                 if not self._on:
                     break

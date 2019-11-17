@@ -125,19 +125,23 @@ class StateSolver(ABC):
 
 
 class SimpleStateSolver(StateSolver):
+    def __init__(self, empty_id=0, inclusion_id=-1):
+        self._empty_id = empty_id
+        self._inclusion_id = inclusion_id
+
     def get_next_state(self, actual_state, neighbors):
         if actual_state:
             return actual_state
         quantity = dict()
         for neighbor in neighbors:
-            if not neighbor:
+            if not neighbor or neighbor == -1:
                 continue
             if neighbor in quantity:
                 quantity[neighbor] += 1
             else:
                 quantity[neighbor] = 1
         if not quantity:
-            return 0
+            return self._empty_id
         max_neigh = []
         max_quantity = 0
         for neighbor, quant in quantity.items():
@@ -249,29 +253,26 @@ class SolverCreator:
 class MainController:
     def __init__(self):
         self._solver_creator = SolverCreator()
-        self._array = np.zeros((50, 100), np.int32)
+        self._array = None
+        self._displayed_array = None
         self._array_lock = threading.Lock()
         self._solver = self._solver_creator.create("Moore", "periodic")
         self._solver_lock = threading.Lock()
-        self._int_min = np.iinfo(np.int32).min
-        self._int_max = np.iinfo(np.int32).max
+        self._cmyk_min = 0
+        self._cmyk_max = np.uint32(np.iinfo(np.uint32).max * 3 / 5)
         self._loop_on = False
         self._delay = None
         self._loop_lock = threading.Lock()
         self._delay_lock = threading.Lock()
         self._loop_gate = threading.Event()
 
-    def _update_array(self, array):
-        with self._array_lock:
-            self._array = array
-
     def array_generator(self):
         while True:
             with self._solver_lock:
                 with self._array_lock:
-                    array = self._array
+                    self._displayed_array = self._array
                     self._array = self._solver.next_step(self._array)
-            yield array
+            yield self._displayed_array
 
     def reset(self, height, width, seed_num):
         heights = np.arange(height)
@@ -281,11 +282,12 @@ class MainController:
         coordinates = zip(
             heights[:seed_num],
             widths[:seed_num],
-            np.random.randint(self._int_min, self._int_max, size=seed_num, dtype=np.int32))
+            np.random.randint(self._cmyk_min, self._cmyk_max, size=seed_num, dtype=np.uint32))
         array = np.zeros((height, width), np.int32)
         for coords in coordinates:
             array[coords[:2]] = coords[2]
-        self._update_array(array)
+        with self._array_lock:
+            self._array = array
 
     def update_solver(self, neighborhood, boundary, state="left-standard"):
         with self._solver_lock:
@@ -304,10 +306,8 @@ class MainController:
             self._loop_on = False
             self._loop_gate.clear()
 
-    def first_control_gate(self):
+    def control_gate(self):
         self._loop_gate.wait()
-
-    def second_control_gate(self):
         with self._loop_lock:
             if self._loop_gate.is_set() and not self._loop_on:
                 self._loop_gate.clear()
@@ -318,11 +318,12 @@ class MainController:
     def start_stop(self):
         with self._loop_lock:
             if self._loop_on:
-                self._loop_gate.clear()
                 self._loop_on = False
+                self._loop_gate.clear()
             else:
-                self._loop_gate.set()
                 self._loop_on = True
+                self._loop_gate.set()
+
 
     def update_delay(self, delay):
         with self._delay_lock:
@@ -334,7 +335,7 @@ class MainController:
 
     def save(self, filename):
         with self._array_lock:
-            array = self._array
+            array = self._displayed_array
         if filename.endswith('.csv'):
             with open(filename, 'w') as file:
                 for row in array:
@@ -351,3 +352,5 @@ class MainController:
             array.extend(lines)
         with self._array_lock:
             self._array = np.array(array, dtype=np.int32)
+        self.next_step()
+

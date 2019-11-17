@@ -132,46 +132,40 @@ class Menu(tk.Frame):
         super().__init__(controller, *args, **kwargs)
         self._controller = controller
 
-        self.startStopBtn = tk.Button(self, text='Start/Stop', width=8)
+        self.startStopBtn = tk.Button(self, text='Start/Stop', command=self.startStopBtnAction, width=8)
         self.startStopBtn.grid(row=0, column=0)
-        self.startStopBtn.bind('<Button-1>', self.startStopBtnAction)
 
-        self.loadBtn = tk.Button(self, text='Load', width=8)
+        self.loadBtn = tk.Button(self, text='Load', command=self.loadBtnAction, width=8)
         self.loadBtn.grid(row=0, column=1)
-        self.loadBtn.bind('<Button-1>', self.loadBtnAction)
 
-        self.saveBtn = tk.Button(self, text='Save', width=8)
+        self.saveBtn = tk.Button(self, text='Save', command=self.saveBtnAction, width=8)
         self.saveBtn.grid(row=0, column=2)
-        self.saveBtn.bind('<Button-1>', self.saveBtnAction)
 
-        self.nextStepBtn = tk.Button(self, text="Next Step", width=8)
+        self.nextStepBtn = tk.Button(self, text="Next Step", command=self.nextStepBtnAction, width=8)
         self.nextStepBtn.grid(row=1, column=0)
-        self.nextStepBtn.bind('<Button-1>', self.nextStepBtnAction)
 
-        self.updateBtn = tk.Button(self, text="Update Solver", width=8)
+        self.updateBtn = tk.Button(self, text="Update Solver", command=self.updateBtnAction, width=8)
         self.updateBtn.grid(row=1, column=1)
-        self.updateBtn.bind('<Button-1>', self.updateBtnAction)
 
-        self.resetBtn = tk.Button(self, text="Reset", width=8)
+        self.resetBtn = tk.Button(self, text="Reset", command=self.resetBtnAction, width=8)
         self.resetBtn.grid(row=1, column=2)
-        self.resetBtn.bind('<Button-1>', self.resetBtnAction)
 
-    def nextStepBtnAction(self, event):
+    def nextStepBtnAction(self):
         self._controller.next_step()
 
-    def startStopBtnAction(self, event):
+    def startStopBtnAction(self):
         self._controller.start_stop()
 
-    def updateBtnAction(self, event):
+    def updateBtnAction(self):
         self._controller.update()
 
-    def resetBtnAction(self, event):
+    def resetBtnAction(self):
         self._controller.reset()
 
-    def saveBtnAction(self, event):
+    def saveBtnAction(self):
         self._controller.save()
 
-    def loadBtnAction(self, event):
+    def loadBtnAction(self):
         self._controller.load()
 
 
@@ -232,7 +226,7 @@ class Body(tk.Frame):
         filename = filedialog.askopenfilename(filetypes=files)
         if filename:
             self._controller.load(filename)
-        self._controller.next_step()
+
 
 
 class View(tk.Frame):
