@@ -131,3 +131,19 @@ class TestMainController:
             [0, 1322904761, 0],
             [1956722279, 0, 0]])
         assert np.array_equal(array, good_array)
+
+    def test_open_gate(self):
+        controller = core.MainController()
+        controller._loop_on = False
+        controller._loop_gate.clear()
+        controller.open_gate()
+        assert controller._loop_gate.is_set()
+        assert controller._loop_on
+
+    def test_close_gate(self):
+        controller = core.MainController()
+        controller._loop_on = True
+        controller._loop_gate.set()
+        controller.close_gate()
+        assert not controller._loop_gate.is_set()
+        assert not controller._loop_on
