@@ -222,7 +222,7 @@ class Body(tk.Frame):
         self._controller.next_step()
 
     def save(self):
-        files = [('CSV', '*.csv')]
+        files = [('CSV', '*.csv'), ('PNG', '*.png')]
         filename = filedialog.asksaveasfilename(filetypes=files)
         if filename:
             self._controller.save(filename)

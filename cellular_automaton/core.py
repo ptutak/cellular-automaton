@@ -1,9 +1,7 @@
 import numpy as np
 import threading
 from abc import ABC, abstractmethod
-from time import sleep
-import cellular_automaton.gui as gui
-import csv
+from PIL import Image
 
 
 class Neighborhood(ABC):
@@ -342,6 +340,9 @@ class MainController:
                 for row in array:
                     file.write(','.join((str(x) for x in row)))
                     file.write('\n')
+        if filename.endswith('.png'):
+            image = Image.fromarray(array, 'CMYK').convert('RGB')
+            image.save(filename)
 
     def load(self, filename):
         array = []
