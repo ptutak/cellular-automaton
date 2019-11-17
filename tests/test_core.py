@@ -4,27 +4,16 @@ import cellular_automaton.core as core
 class TestNeighborhood:
     def test_moore(self):
         moore = core.MooreNeighborhood()
-        neighbors = set(moore.get_neighbors((1,1)))
+        neighbors = set(moore.get_neighbors(1,1))
         valid_neighbors = {(0,0), (0,1), (0,2), (1,0), (1,2), (2,0), (2,1), (2,2)}
         assert neighbors == valid_neighbors
-        try:
-            moore.get_neighbors((1,1,1))
-        except TypeError:
-            assert True
-        else:
-            assert False
+
 
     def test_neumann(self):
         neumann = core.NeumannNeighborhood()
-        neighbors = set(neumann.get_neighbors((1,1)))
+        neighbors = set(neumann.get_neighbors(1,1))
         valid_neighbors = {(0,1), (1,0), (1,2), (2,1)}
         assert neighbors == valid_neighbors
-        try:
-            neumann.get_neighbors((1,1,1))
-        except TypeError:
-            assert True
-        else:
-            assert False
 
 
 class TestSolver:
@@ -56,7 +45,7 @@ class TestSolver:
             [0,1,0]
         ])
         values = [0,0,1,0,0,0,1,0]
-        assert values == list(solver._get_neighbor_values(array, (0,0)))
+        assert values == list(solver._get_neighbor_values(array, (0,0))[1])
 
 
 class TestStateSolver:
@@ -67,7 +56,7 @@ class TestStateSolver:
             [0,0,1,0],
             [0,0,0,0]])
         neighborhood = core.MooreNeighborhood()
-        neighbors_indices = neighborhood.get_neighbors((1,1))
+        neighbors_indices = neighborhood.get_neighbors(1,1)
         neighbors_1_1 = (array[index] for index in neighbors_indices)
         state_solver = core.SimpleStateSolver()
         new_state = state_solver.get_next_state(array[(1,1)], neighbors_1_1)
@@ -124,10 +113,11 @@ class TestMainController:
     def test_array_generator(self):
         controller = core.MainController()
         arrays = controller.array_generator()
+        controller._array = np.zeros((3, 3), np.int32)
         array = next(arrays)
-        assert np.array_equal(array, np.zeros((50, 100), np.int32))
+        assert np.array_equal(array, np.zeros((3, 3), np.int32))
         array = next(arrays)
-        assert np.array_equal(array, np.zeros((50, 100), np.int32))
+        assert np.array_equal(array, np.zeros((3, 3), np.int32))
 
     def test_reset(self):
         controller = core.MainController()
@@ -135,8 +125,9 @@ class TestMainController:
         controller.reset(3, 3, 3)
         arrays = controller.array_generator()
         array = next(arrays)
+        print(array)
         good_array = np.array([
-            [0, 0, -190761369],
-            [0, 959775639, 0],
-            [2053951699, 0, 0]])
+            [0, 0, -1982145138],
+            [0, 1322904761, 0],
+            [1956722279, 0, 0]])
         assert np.array_equal(array, good_array)
