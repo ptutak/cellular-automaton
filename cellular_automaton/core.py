@@ -353,6 +353,7 @@ class ArrayBuilder:
         self._cmyk_min = cmyk_min
         self._cmyk_max = cmyk_max
         self._array = None
+        self._inclusion_value = inclusion_value
 
     def get_array(self):
         return self._array
@@ -361,20 +362,14 @@ class ArrayBuilder:
         self._array = np.zeros((height, width), dtype=np.uint32)
 
     def add_seed(self, seed_num):
-        heights = np.arange(self._array.shape[0])
-        widths = np.arange(self._array.shape[1])
-        seeds = {}
+        empty_fields = sorted(self.get_empty_fields())
+        seed_coords_indices = np.random.choice(np.arange(len(empty_fields)), seed_num)
 
-        while len(seeds) < seed_num:
-            coords = (np.random.choice(heights), np.random.choice(widths))
-            if coords not in seeds:
-                seeds[coords] = np.random.randint(
-                    self._cmyk_min,
-                    self._cmyk_max,
-                    dtype=np.uint32)
-
-        for coords, seed in seeds.items():
-            self._array[coords] = seed
+        for index in seed_coords_indices:
+            self._array[empty_fields[index]] = np.random.randint(
+                self._cmyk_min,
+                self._cmyk_max,
+                dtype=np.uint32)
 
     def horizontal_line(self, x0, y0, y1):
         point_set = set()
@@ -382,7 +377,7 @@ class ArrayBuilder:
             point_set.add((x0, y))
         return point_set
 
-    def circle(self, x0, y0, radius):
+    def filled_circle(self, x0, y0, radius):
         f = 1 - radius
         ddf_x = 1
         ddf_y = -2 * radius
@@ -420,12 +415,38 @@ class ArrayBuilder:
     def add_inclusions(self, inclusion_number, min_radius, max_radius):
         heights = np.arange(self._array.shape[0])
         widths = np.arange(self._array.shape[1])
-        inclusions = {}
+        inclusions = set()
+        filled_fields = self.get_filled_fields()
 
         while len(inclusions) < inclusion_number:
             coords = (np.random.choice(heights), np.random.choice(widths))
-            if coords not in inclusions:
-                inclusions[coords] = np.random.randint(
-                    self._cmyk_min,
-                    self._cmyk_max,
-                    dtype=np.uint32)
+            if coords not in inclusions and coords not in filled_fields:
+                inclusions.add(coords)
+
+        for coords in set(inclusions):
+            radius = np.random.randint(min_radius, max_radius + 1)
+            while True:
+                filled_circle = self.filled_circle(coords[0], coords[1], radius)
+                if filled_circle & filled_fields:
+                    radius -= 1
+                inclusions |= filled_circle
+                filled_fields |= filled_circle
+                break
+
+        for coords in inclusions:
+            self._array[coords] = self._inclusion_value
+
+    def get_filled_fields(self):
+        field_set = {
+            (x, y) for x in range(self._array.shape[0])
+            for y in range(self._array.shape[0])
+            if self._array[(x, y)]}
+        return field_set
+
+    def get_empty_fields(self):
+        field_set = {
+            (x, y) for x in range(self._array.shape[0])
+            for y in range(self._array.shape[1])
+            if not self._array[(x, y)]
+        }
+        return field_set

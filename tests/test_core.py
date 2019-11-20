@@ -126,9 +126,10 @@ class TestMainController:
         arrays = controller.array_generator()
         array = next(arrays)
         good_array = np.array([
-            [0, 2228968745, 0],
             [0, 0, 0],
-            [1231553676, 0, 2011930125]])
+            [1024331969, 1818769098, 0],
+            [2181898220, 0, 0]
+        ])
         assert np.array_equal(array, good_array)
 
     def test_open_gate(self):
@@ -163,12 +164,13 @@ class TestArrayBuilder:
         builder.new_array(3, 3)
         np.random.seed(7)
         builder.add_seed(3)
+        print(builder.get_array())
         assert np.array_equal(
             builder.get_array(),
             np.array([
-                [0, 2228968745, 0],
                 [0, 0, 0],
-                [1231553676, 0, 2011930125]
+                [1024331969, 1818769098, 0],
+                [2181898220, 0, 0]
             ]))
 
     def test_add_inclusions(self):
@@ -196,8 +198,31 @@ class TestArrayBuilder:
         line = builder.horizontal_line(5, 0, 0)
         assert line == set(((5, 0),))
 
-    def test_circle(self):
+    def test_filled_circle(self):
         builder = core.ArrayBuilder()
-        circle = builder.circle(5, 5, 2)
+        circle = builder.filled_circle(5, 5, 2)
         good_circle = {(6, 4), (5, 4), (4, 7), (6, 6), (5, 6), (4, 5), (7, 5), (6, 5), (3, 5), (5, 3), (6, 7), (5, 5), (4, 6), (7, 6), (5, 7), (4, 4), (6, 3), (7, 4), (4, 3), (3, 6), (3, 4)}
         assert circle == good_circle
+
+    def test_get_filled_fields(self):
+        builder = core.ArrayBuilder()
+        builder.new_array(3, 3)
+        np.random.seed(7)
+        builder.add_seed(3)
+        assert builder.get_filled_fields() == set((
+            (1, 0),
+            (2, 0),
+            (1, 1)))
+
+    def test_get_empty_fields(self):
+        builder = core.ArrayBuilder()
+        builder.new_array(3, 3)
+        np.random.seed(7)
+        builder.add_seed(3)
+        assert builder.get_empty_fields() == set((
+            (0, 0),
+            (0, 1),
+            (0, 2),
+            (1, 2),
+            (2, 1),
+            (2, 2)))
