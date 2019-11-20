@@ -125,11 +125,10 @@ class TestMainController:
         controller.reset(3, 3, 3)
         arrays = controller.array_generator()
         array = next(arrays)
-        print(array)
         good_array = np.array([
-            [0, 0, -1982145138],
-            [0, 1322904761, 0],
-            [1956722279, 0, 0]])
+            [0, 2228968745, 0],
+            [0, 0, 0],
+            [1231553676, 0, 2011930125]])
         assert np.array_equal(array, good_array)
 
     def test_open_gate(self):
@@ -147,3 +146,58 @@ class TestMainController:
         controller.close_gate()
         assert not controller._loop_gate.is_set()
         assert not controller._loop_on
+
+
+class TestArrayBuilder:
+    def test_get_array(self):
+        builder = core.ArrayBuilder()
+        assert builder.get_array() is None
+
+    def test_new_array(self):
+        builder = core.ArrayBuilder()
+        builder.new_array(3, 3)
+        assert np.array_equal(builder.get_array(), np.zeros((3, 3), dtype=np.uint32))
+
+    def test_add_seed(self):
+        builder = core.ArrayBuilder()
+        builder.new_array(3, 3)
+        np.random.seed(7)
+        builder.add_seed(3)
+        assert np.array_equal(
+            builder.get_array(),
+            np.array([
+                [0, 2228968745, 0],
+                [0, 0, 0],
+                [1231553676, 0, 2011930125]
+            ]))
+
+    def test_add_inclusions(self):
+        builder = core.ArrayBuilder()
+        builder.new_array(3, 3)
+        np.random.seed(7)
+        builder.add_seed(3)
+        builder.add_inclusions(2, 1, 2)
+        print(builder.get_array())
+        assert np.array_equal(
+            builder.get_array(),
+            np.array([
+                [0, 2228968745, -1],
+                [0, -1, 0],
+                [1231553676, 0, 2011930125]
+            ])
+        )
+
+    def test_horizontal_line(self):
+        builder = core.ArrayBuilder()
+        line = builder.horizontal_line(5, -3, 0)
+        assert line == set(((5, -3), (5, -2), (5, -1), (5, 0)))
+        line = builder.horizontal_line(5, 0, -3)
+        assert line == set()
+        line = builder.horizontal_line(5, 0, 0)
+        assert line == set(((5, 0),))
+
+    def test_circle(self):
+        builder = core.ArrayBuilder()
+        circle = builder.circle(5, 5, 2)
+        good_circle = {(6, 4), (5, 4), (4, 7), (6, 6), (5, 6), (4, 5), (7, 5), (6, 5), (3, 5), (5, 3), (6, 7), (5, 5), (4, 6), (7, 6), (5, 7), (4, 4), (6, 3), (7, 4), (4, 3), (3, 6), (3, 4)}
+        assert circle == good_circle

@@ -2,6 +2,7 @@ import numpy as np
 import threading
 from abc import ABC, abstractmethod
 from PIL import Image
+from fractions import Fraction
 
 
 class Neighborhood(ABC):
@@ -211,7 +212,7 @@ class Solver:
         new_elements = (
             self._state_solver.get_next_state(elem, neighborhood)
             for elem, neighborhood in element_and_neighbors)
-        return np.fromiter(new_elements, np.int32).reshape(height, width)
+        return np.fromiter(new_elements, np.uint32).reshape(height, width)
 
 
 class SolverCreator:
@@ -253,18 +254,17 @@ class SolverCreator:
 class MainController:
     def __init__(self):
         self._solver_creator = SolverCreator()
+        self._array_builder = ArrayBuilder()
         self._array = None
         self._displayed_array = None
         self._array_lock = threading.Lock()
         self._solver = self._solver_creator.create("Moore", "periodic")
         self._solver_lock = threading.Lock()
-        self._cmyk_min = 0
-        self._cmyk_max = np.uint32(np.iinfo(np.uint32).max * 3 / 5)
         self._loop_on = False
-        self._delay = None
         self._loop_lock = threading.Lock()
-        self._delay_lock = threading.Lock()
         self._loop_gate = threading.Event()
+        self._delay = None
+        self._delay_lock = threading.Lock()
 
     def array_generator(self):
         while True:
@@ -275,19 +275,10 @@ class MainController:
             yield self._displayed_array
 
     def reset(self, height, width, seed_num):
-        heights = np.arange(height)
-        np.random.shuffle(heights)
-        widths = np.arange(width)
-        np.random.shuffle(widths)
-        coordinates = zip(
-            heights[:seed_num],
-            widths[:seed_num],
-            np.random.randint(self._cmyk_min, self._cmyk_max, size=seed_num, dtype=np.uint32))
-        array = np.zeros((height, width), np.int32)
-        for coords in coordinates:
-            array[coords[:2]] = coords[2]
+        self._array_builder.new_array(height, width)
+        self._array_builder.add_seed(seed_num)
         with self._array_lock:
-            self._array = array
+            self._array = self._array_builder.get_array()
 
     def update_solver(self, neighborhood, boundary, state="left-standard"):
         with self._solver_lock:
@@ -324,7 +315,6 @@ class MainController:
                 self._loop_on = True
                 self._loop_gate.set()
 
-
     def update_delay(self, delay):
         with self._delay_lock:
             self._delay = delay
@@ -351,6 +341,91 @@ class MainController:
             lines = (line.strip().split(',') for line in open(filename) if line.strip())
             array.extend(lines)
         with self._array_lock:
-            self._array = np.array(array, dtype=np.int32)
+            self._array = np.array(array, dtype=np.uint32)
         self.next_step()
 
+
+class ArrayBuilder:
+    def __init__(self,
+                 cmyk_min=np.uint32(np.iinfo(np.uint32).max * 1 / 5),
+                 cmyk_max=np.uint32(np.iinfo(np.uint32).max * 3 / 5),
+                 inclusion_value=np.uint32(-1)):
+        self._cmyk_min = cmyk_min
+        self._cmyk_max = cmyk_max
+        self._array = None
+
+    def get_array(self):
+        return self._array
+
+    def new_array(self, height, width):
+        self._array = np.zeros((height, width), dtype=np.uint32)
+
+    def add_seed(self, seed_num):
+        heights = np.arange(self._array.shape[0])
+        widths = np.arange(self._array.shape[1])
+        seeds = {}
+
+        while len(seeds) < seed_num:
+            coords = (np.random.choice(heights), np.random.choice(widths))
+            if coords not in seeds:
+                seeds[coords] = np.random.randint(
+                    self._cmyk_min,
+                    self._cmyk_max,
+                    dtype=np.uint32)
+
+        for coords, seed in seeds.items():
+            self._array[coords] = seed
+
+    def horizontal_line(self, x0, y0, y1):
+        point_set = set()
+        for y in range(y0, y1 + 1):
+            point_set.add((x0, y))
+        return point_set
+
+    def circle(self, x0, y0, radius):
+        f = 1 - radius
+        ddf_x = 1
+        ddf_y = -2 * radius
+        x = 0
+        y = radius
+        point_set = set()
+        point_set.add((x0, y0 + radius))
+        point_set.add((x0, y0 - radius))
+        point_set |= self.horizontal_line(x0, y0 - radius, y0 + radius)
+        point_set.add((x0 + radius, y0))
+        point_set.add((x0 - radius, y0))
+
+        while x < y:
+            if f >= 0:
+                y -= 1
+                ddf_y += 2
+                f += ddf_y
+            x += 1
+            ddf_x += 2
+            f += ddf_x
+            point_set.add((x0 + x, y0 + y))
+            point_set.add((x0 - x, y0 + y))
+            point_set.add((x0 + x, y0 - y))
+            point_set.add((x0 - x, y0 - y))
+            point_set.add((x0 + y, y0 + x))
+            point_set.add((x0 - y, y0 + x))
+            point_set.add((x0 + y, y0 - x))
+            point_set.add((x0 - y, y0 - x))
+            point_set |= self.horizontal_line(x0 + x, y0 - y, y0 + y)
+            point_set |= self.horizontal_line(x0 - x, y0 - y, y0 + y)
+            point_set |= self.horizontal_line(x0 + y, y0 - x, y0 + x)
+            point_set |= self.horizontal_line(x0 - y, y0 - x, y0 + x)
+        return point_set
+
+    def add_inclusions(self, inclusion_number, min_radius, max_radius):
+        heights = np.arange(self._array.shape[0])
+        widths = np.arange(self._array.shape[1])
+        inclusions = {}
+
+        while len(inclusions) < inclusion_number:
+            coords = (np.random.choice(heights), np.random.choice(widths))
+            if coords not in inclusions:
+                inclusions[coords] = np.random.randint(
+                    self._cmyk_min,
+                    self._cmyk_max,
+                    dtype=np.uint32)
