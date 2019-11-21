@@ -415,20 +415,38 @@ class ArrayBuilder:
         return point_set
 
     def add_inclusions(self, inclusion_number, min_radius, max_radius):
-        empty_fields = sorted(self.get_empty_fields())
-
         min_index = 0
         max_height_index = self._array.shape[0] - 1
         max_width_index = self._array.shape[1] - 1
 
-        inclusion_coords_indices = np.random.choice(np.arange(len(empty_fields)), inclusion_number)
+        empty_fields = self.get_empty_fields()
+        filled_fields = set(self.get_filled_fields())
+
+        empty_filtered_fields = set(
+            field
+            for field in empty_fields
+            if field[0] >= min_index + min_radius
+            and field[0] <= max_height_index - min_radius
+            and field[1] >= min_index + min_radius
+            and field[1] <= max_width_index - min_radius)
+
+        for filled in filled_fields:
+            circle = self.filled_circle(filled[0], filled[1], min_radius)
+            empty_filtered_fields -= circle
 
         inclusions = set()
-        for index in inclusion_coords_indices:
-            inclusions.add(empty_fields[index])
+
+        while len(inclusions) < inclusion_number:
+            empty_fields_left = len(empty_filtered_fields)
+            if not empty_fields_left:
+                break
+            field_index = np.random.randint(empty_fields_left)
+            field = list(empty_filtered_fields)[field_index]
+            inclusions.add(field)
+            circle = self.filled_circle(field[0], field[1], min_radius + max_radius)
+            empty_filtered_fields -= circle
 
         inclusion_circles = set()
-        filled_fields = self.get_filled_fields()
 
         for coords in set(inclusions):
             inclusions.discard(coords)
@@ -451,16 +469,16 @@ class ArrayBuilder:
             self._array[coords] = self._inclusion_value
 
     def get_filled_fields(self):
-        field_set = {
+        field_set = (
             (x, y) for x in range(self._array.shape[0])
             for y in range(self._array.shape[1])
-            if self._array[(x, y)]}
+            if self._array[(x, y)])
         return field_set
 
     def get_empty_fields(self):
-        field_set = {
+        field_set = (
             (x, y) for x in range(self._array.shape[0])
             for y in range(self._array.shape[1])
             if not self._array[(x, y)]
-        }
+        )
         return field_set

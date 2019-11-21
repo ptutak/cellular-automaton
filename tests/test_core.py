@@ -164,7 +164,6 @@ class TestArrayBuilder:
         builder.new_array(3, 3)
         np.random.seed(7)
         builder.add_seed(3)
-        print(builder.get_array())
         assert np.array_equal(
             builder.get_array(),
             np.array([
@@ -179,7 +178,6 @@ class TestArrayBuilder:
         np.random.seed(7)
         builder.add_seed(3)
         builder.add_inclusions(2, 0, 0)
-        print(builder.get_array())
         assert np.array_equal(
             builder.get_array(),
             np.array([
@@ -209,7 +207,7 @@ class TestArrayBuilder:
         builder.new_array(3, 3)
         np.random.seed(7)
         builder.add_seed(3)
-        assert builder.get_filled_fields() == set((
+        assert set(builder.get_filled_fields()) == set((
             (1, 0),
             (2, 0),
             (1, 1)))
@@ -219,7 +217,7 @@ class TestArrayBuilder:
         builder.new_array(3, 3)
         np.random.seed(7)
         builder.add_seed(3)
-        assert builder.get_empty_fields() == set((
+        assert set(builder.get_empty_fields()) == set((
             (0, 0),
             (0, 1),
             (0, 2),
