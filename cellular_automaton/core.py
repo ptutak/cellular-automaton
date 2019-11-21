@@ -428,10 +428,11 @@ class ArrayBuilder:
             inclusions.add(empty_fields[index])
 
         inclusion_circles = set()
+        filled_fields = self.get_filled_fields()
+
         for coords in set(inclusions):
             inclusions.discard(coords)
             radius = np.random.randint(min_radius, max_radius + 1)
-            filled_fields = self.get_filled_fields()
             while True:
                 filled_circle = self.filled_circle(coords[0], coords[1], radius)
                 if filled_circle & filled_fields\
@@ -452,7 +453,7 @@ class ArrayBuilder:
     def get_filled_fields(self):
         field_set = {
             (x, y) for x in range(self._array.shape[0])
-            for y in range(self._array.shape[0])
+            for y in range(self._array.shape[1])
             if self._array[(x, y)]}
         return field_set
 
