@@ -169,6 +169,31 @@ class Menu(tk.Frame):
         self._controller.load()
 
 
+class Inclusions(tk.Frame):
+    def __init__(self, controller, *args, **kwargs):
+        super().__init__(controller, *args, **kwargs)
+        self.inclusionNumVar = tk.IntVar(self)
+        self.inclusionNumVar.set(3)
+        self.labelInclusion = tk.Label(self, text="Inclusion number:")
+        self.labelInclusion.grid(row=0, column=0, sticky=tk.W)
+        self.inclusionEntry = tk.Entry(self, textvariable=self.inclusionNumVar)
+        self.inclusionEntry.grid(row=0, column=1, sticky=tk.W)
+
+        self.inclusionMinRadiusVar = tk.IntVar(self)
+        self.inclusionMinRadiusVar.set(1)
+        self.inclusionMinRadiusLabel = tk.Label(self, text="Inclusion min radius:")
+        self.inclusionMinRadiusLabel.grid(row=1, column=0, sticky=tk.W)
+        self.inclusionMinRadiusEntry = tk.Entry(self, textvariable=self.inclusionMinRadiusVar)
+        self.inclusionMinRadiusEntry.grid(row=1, column=1, sticky=tk.W)
+
+        self.inclusionMaxRadiusVar = tk.IntVar(self)
+        self.inclusionMaxRadiusVar.set(2)
+        self.inclusionMaxRadiusLabel = tk.Label(self, text="Inclusion max radius:")
+        self.inclusionMaxRadiusLabel.grid(row=2, column=0, sticky=tk.W)
+        self.inclusionMaxRadiusEntry = tk.Entry(self, textvariable=self.inclusionMaxRadiusVar)
+        self.inclusionMaxRadiusEntry.grid(row=2, column=1, sticky=tk.W)
+
+
 class Body(tk.Frame):
     def __init__(self, controller, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -194,6 +219,11 @@ class Body(tk.Frame):
         self.sizeGrainMenu.columnconfigure(0, weight=1)
         self.sizeGrainMenu.columnconfigure(1, weight=1)
 
+        self.inclusionMenu = Inclusions(self)
+        self.inclusionMenu.grid(row=5, column=0, sticky=tk.W+tk.E)
+        self.inclusionMenu.columnconfigure(0, weight=1)
+        self.inclusionMenu.columnconfigure(1, weight=1)
+
     def start_stop(self):
         self._controller.start_stop()
 
@@ -201,7 +231,20 @@ class Body(tk.Frame):
         seed_number = self.sizeGrainMenu.seedNumVar.get()
         height = self.sizeGrainMenu.heightNumVar.get()
         width = self.sizeGrainMenu.widthNumVar.get()
-        self._controller.reset(height, width, seed_number)
+
+        inclusion_number = self.inclusionMenu.inclusionNumVar.get()
+        inclusion_min_radius = self.inclusionMenu.inclusionMinRadiusVar.get()
+        inclusion_max_radius = self.inclusionMenu.inclusionMaxRadiusVar.get()
+        if inclusion_max_radius < inclusion_min_radius:
+            self.inclusionMenu.inclusionMaxRadiusVar.set(inclusion_min_radius)
+            inclusion_max_radius = inclusion_min_radius
+        self._controller.reset(
+            height,
+            width,
+            seed_number,
+            inclusion_number,
+            inclusion_min_radius,
+            inclusion_max_radius)
         self._controller.start_stop()
         self._controller.start_stop()
 

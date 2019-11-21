@@ -126,7 +126,7 @@ class StateSolver(ABC):
 
 
 class SimpleStateSolver(StateSolver):
-    def __init__(self, empty_id=0, inclusion_id=-1):
+    def __init__(self, empty_id=0, inclusion_id=np.uint32(-1)):
         self._empty_id = empty_id
         self._inclusion_id = inclusion_id
 
@@ -135,7 +135,7 @@ class SimpleStateSolver(StateSolver):
             return actual_state
         quantity = dict()
         for neighbor in neighbors:
-            if not neighbor or neighbor == -1:
+            if not neighbor or neighbor == self._inclusion_id:
                 continue
             if neighbor in quantity:
                 quantity[neighbor] += 1
@@ -274,9 +274,10 @@ class MainController:
                     self._array = self._solver.next_step(self._array)
             yield self._displayed_array
 
-    def reset(self, height, width, seed_num):
+    def reset(self, height, width, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
         self._array_builder.new_array(height, width)
         self._array_builder.add_seed(seed_num)
+        self._array_builder.add_inclusions(inclusion_num, inc_min_radius, inc_max_radius)
         with self._array_lock:
             self._array = self._array_builder.get_array()
 
@@ -410,30 +411,42 @@ class ArrayBuilder:
             point_set |= self.horizontal_line(x0 - x, y0 - y, y0 + y)
             point_set |= self.horizontal_line(x0 + y, y0 - x, y0 + x)
             point_set |= self.horizontal_line(x0 - y, y0 - x, y0 + x)
+
         return point_set
 
     def add_inclusions(self, inclusion_number, min_radius, max_radius):
-        heights = np.arange(self._array.shape[0])
-        widths = np.arange(self._array.shape[1])
+        empty_fields = sorted(self.get_empty_fields())
+
+        min_index = 0
+        max_height_index = self._array.shape[0] - 1
+        max_width_index = self._array.shape[1] - 1
+
+        inclusion_coords_indices = np.random.choice(np.arange(len(empty_fields)), inclusion_number)
+
         inclusions = set()
-        filled_fields = self.get_filled_fields()
+        for index in inclusion_coords_indices:
+            inclusions.add(empty_fields[index])
 
-        while len(inclusions) < inclusion_number:
-            coords = (np.random.choice(heights), np.random.choice(widths))
-            if coords not in inclusions and coords not in filled_fields:
-                inclusions.add(coords)
-
+        inclusion_circles = set()
         for coords in set(inclusions):
+            inclusions.discard(coords)
             radius = np.random.randint(min_radius, max_radius + 1)
+            filled_fields = self.get_filled_fields()
             while True:
                 filled_circle = self.filled_circle(coords[0], coords[1], radius)
-                if filled_circle & filled_fields:
+                if filled_circle & filled_fields\
+                or filled_circle & inclusions\
+                or filled_circle & inclusion_circles\
+                or coords[0] + radius > max_height_index\
+                or coords[0] - radius < min_index\
+                or coords[1] + radius > max_width_index\
+                or coords[1] - radius < min_index:
                     radius -= 1
-                inclusions |= filled_circle
-                filled_fields |= filled_circle
-                break
+                else:
+                    break
+            inclusion_circles |= filled_circle
 
-        for coords in inclusions:
+        for coords in inclusion_circles:
             self._array[coords] = self._inclusion_value
 
     def get_filled_fields(self):

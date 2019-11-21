@@ -122,11 +122,11 @@ class TestMainController:
     def test_reset(self):
         controller = core.MainController()
         np.random.seed(7)
-        controller.reset(3, 3, 3)
+        controller.reset(3, 3, 3, 2, 0, 0)
         arrays = controller.array_generator()
         array = next(arrays)
         good_array = np.array([
-            [0, 0, 0],
+            [4294967295, 4294967295, 0],
             [1024331969, 1818769098, 0],
             [2181898220, 0, 0]
         ])
@@ -178,14 +178,14 @@ class TestArrayBuilder:
         builder.new_array(3, 3)
         np.random.seed(7)
         builder.add_seed(3)
-        builder.add_inclusions(2, 1, 2)
+        builder.add_inclusions(2, 0, 0)
         print(builder.get_array())
         assert np.array_equal(
             builder.get_array(),
             np.array([
-                [0, 2228968745, -1],
-                [0, -1, 0],
-                [1231553676, 0, 2011930125]
+                [4294967295, 4294967295, 0],
+                [1024331969, 1818769098, 0],
+                [2181898220, 0, 0]
             ])
         )
 
