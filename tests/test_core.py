@@ -148,6 +148,40 @@ class TestMainController:
         assert not controller._loop_gate.is_set()
         assert not controller._loop_on
 
+    def test_control_gate(self):
+        controller = core.MainController()
+        controller._loop_gate.set()
+        controller._loop_on = False
+        controller.control_gate()
+        assert not controller._loop_gate.is_set()
+
+    def test_next_step(self):
+        controller = core.MainController()
+        controller._loop_gate.clear()
+        controller.next_step()
+        assert controller._loop_gate.is_set()
+
+    def test_start_stop(self):
+        controller = core.MainController()
+        assert not controller._loop_on
+        assert not controller._loop_gate.is_set()
+        controller.start_stop()
+        assert controller._loop_on
+        assert controller._loop_gate.is_set()
+        controller.start_stop()
+        assert not controller._loop_on
+        assert not controller._loop_gate.is_set()
+
+    def test_get_delay(self):
+        controller = core.MainController()
+        assert controller.get_delay() is None
+        controller.update_delay(0.5)
+        assert controller.get_delay() == 0.5
+
+    def test_save(self):
+        controller = core.MainController()
+        assert False
+
 
 class TestArrayBuilder:
     def test_get_array(self):
