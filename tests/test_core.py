@@ -1,5 +1,6 @@
 import numpy as np
 import cellular_automaton.core as core
+import os
 
 class TestNeighborhood:
     def test_moore(self):
@@ -180,8 +181,38 @@ class TestMainController:
 
     def test_save(self):
         controller = core.MainController()
-        assert False
+        np.random.seed(7)
+        controller._displayed_array = np.array([
+                [0, 0, 0],
+                [0, 1, 0],
+                [0, 0, 0]
+            ], dtype=np.uint32)
+        filename = 'test.save.core.main.controller.csv'
+        controller.save(filename)
+        lines = (line.strip().split(',') for line in open(filename) if line.strip())
+        os.remove(filename)
+        array = []
+        array.extend(lines)
+        assert np.array_equal(np.array(array, dtype=np.uint32), controller._displayed_array)
 
+    def test_load(self):
+        controller = core.MainController()
+        filecontent = """1,1,1
+2,1,2
+3,1,1
+"""
+        filename = 'test.load.core.main.controller.csv'
+        with open(filename, 'w') as f:
+            f.write(filecontent)
+
+        controller.load(filename)
+        good_array = np.array([
+            [1, 1, 1],
+            [2, 1, 2],
+            [3, 1, 1]
+        ], dtype=np.uint32)
+        os.remove(filename)
+        assert np.array_equal(good_array, controller._array)
 
 class TestArrayBuilder:
     def test_get_array(self):
