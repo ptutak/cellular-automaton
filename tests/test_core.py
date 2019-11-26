@@ -16,6 +16,43 @@ class TestNeighborhood:
         valid_neighbors = {(0,1), (1,0), (1,2), (2,1)}
         assert neighbors == valid_neighbors
 
+    def test_hexagonal_left(self):
+        hexagonal_left = core.HexagonalLeftNeighborhood()
+        neighbors = set(hexagonal_left.get_neighbors(1, 1))
+        valid_neighbors = {(0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 1)}
+        assert neighbors == valid_neighbors
+
+    def test_hexagonal_right(self):
+        hexagonal_right = core.HexagonalRightNeighborhood()
+        neighbors = set(hexagonal_right.get_neighbors(1, 1))
+        valid_neighbors = {(0, 0), (0, 1), (1, 0), (1, 2), (2, 1), (2, 2)}
+        assert neighbors == valid_neighbors
+
+    def test_hexagonal_random(self):
+        hexagonal_random = core.HexagonalRandom()
+        np.random.seed(7)
+        neighbors = set(hexagonal_random.get_neighbors(1, 1))
+        valid_neighbors = {(0, 1), (0, 2), (1, 0), (1, 2), (2, 0), (2, 1)}
+        assert neighbors == valid_neighbors
+
+    def test_pentagonal_left(self):
+        pentagonal_left = core.PentagonalLeft()
+        neighbors = set(pentagonal_left.get_neighbors(1, 1))
+        valid_neighbors = {(0, 0), (0, 1), (1, 0), (2, 0), (2, 1)}
+        assert neighbors == valid_neighbors
+
+    def test_pentagonal_right(self):
+        pentagonal_right = core.PentagonalRight()
+        neighbors = set(pentagonal_right.get_neighbors(1, 1))
+        valid_neighbors = {(0, 1), (0, 2), (1, 2), (2, 1), (2, 2)}
+        assert neighbors == valid_neighbors
+
+    def test_pentagonal_random(self):
+        pentagonal_random = core.PentagonalRandom()
+        np.random.seed(7)
+        neighbors = set(pentagonal_random.get_neighbors(1, 1))
+        valid_neighbors = {(0, 0), (0, 1), (1, 0), (2, 0), (2, 1)}
+        assert neighbors == valid_neighbors
 
 class TestSolver:
     def test_next_step(self):
