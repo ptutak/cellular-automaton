@@ -121,8 +121,49 @@ class PentagonalRandom(Neighborhood):
 
 class StateSolver(ABC):
     @abstractmethod
-    def get_next_state(self, neighbors):
+    def get_next_state(self, actual_state, neighbors):
         pass
+
+
+class GrainCurvatureStateSolver(StateSolver):
+    def __init__(self, probability=0.5, empty_id=0, inclusion_id = np.uint32(-1)):
+        self._probability = probability
+        self._empty_id = empty_id
+        self._inclusion_id = inclusion_id
+        self._cross_set = {1, 3, 4, 6}
+        self._diagonal_set = {0, 2, 5, 7}
+
+    def _rule_five_more(self, quantity):
+        for grain in quantity:
+            if len(quantity[grain]) >= 5:
+                return grain
+        return None
+
+    def _rule_three_cross(self, quantity):
+        for grain in quantity:
+            if len(quantity[grain] & self._cross_set) >= 3:
+                return grain
+        return None
+
+    def _rule_three_diagonal(self, quantity):
+        for grain in quantity:
+            if len(quantity[grain] & self._diagonal_set) >= 3:
+                return grain
+        return None
+
+    def get_next_state(self, actual_state, neighbors):
+        if actual_state != self._empty_id:
+            return actual_state
+        quantity = dict()
+        for i, neighbor in enumerate(neighbors):
+            if neighbor != self._empty_id or neighbor == self._inclusion_id:
+                continue
+            if neighbor in quantity:
+                quantity[neighbor].add(i)
+            else:
+                quantity[neighbor] = {i}
+        if not quantity:
+            return self._empty_id
 
 
 class SimpleStateSolver(StateSolver):

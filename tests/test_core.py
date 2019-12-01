@@ -86,7 +86,7 @@ class TestSolver:
         assert values == list(solver._get_neighbor_values(array, (0,0))[1])
 
 
-class TestStateSolver:
+class TestSimpleStateSolver:
     def test_next_elem(self):
         array = np.array([
             [0,0,0,0],
@@ -100,6 +100,70 @@ class TestStateSolver:
         new_state = state_solver.get_next_state(array[(1,1)], neighbors_1_1)
         assert new_state == 1
 
+class TestGrainCurvatureStateSolver:
+    """
+    grain placement numeration:
+    [
+        [0, 1, 2],
+        [3, x, 4],
+        [5, 6, 7]
+    ]
+    """
+    def test_next_elem(self):
+        solver = core.GrainCurvatureStateSolver(probability=0.5)
+        state = 0
+        neighbors = [
+            1, 1, 1,
+            1,    0,
+            1, 0, 0
+        ]
+        assert solver.get_next_state(state, neighbors) == 1
+
+    def test_rule_five_more_neighbors(self):
+        solver = core.GrainCurvatureStateSolver()
+        quantity = {
+            3 : {0, 1, 2, 3, 4},
+            2 : {5, 6}
+        }
+        assert solver._rule_five_more(quantity) == 3
+        quantity = {
+            1 : {1, 2, 3},
+            2 : {4, 5}
+        }
+        assert solver._rule_five_more(quantity) is None
+
+    def test_rule_three_cross(self):
+        solver = core.GrainCurvatureStateSolver()
+        quantity = {
+            1 : {3, 4, 6},
+            2 : {1, 5, 7}
+        }
+        assert solver._rule_three_cross(quantity) == 1
+        quantity = {
+            1 : {1, 5, 7},
+            2 : {3, 4}
+        }
+        assert solver._rule_three_cross(quantity) is None
+
+    def test_rule_three_diagonal(self):
+        solver = core.GrainCurvatureStateSolver()
+        quantity = {
+            1 : {0, 2, 7},
+            2 : {4, 6, 5}
+        }
+        assert solver._rule_three_diagonal(quantity) == 1
+        quantity = {
+            1 : {0, 2, 4},
+            2 : {5, 6, 7}
+        }
+        assert solver._rule_three_diagonal(quantity) is None
+
+
+    def test_rule_random_quanity(self):
+        solver = core.GrainCurvatureStateSolver()
+        quantity = {
+
+        }
 
 class TestPeriodicBoundary:
     def test_get_boundary(self):
