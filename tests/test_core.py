@@ -158,12 +158,16 @@ class TestGrainCurvatureStateSolver:
         }
         assert solver._rule_three_diagonal(quantity) is None
 
-
     def test_rule_random_quanity(self):
-        solver = core.GrainCurvatureStateSolver()
+        solver = core.GrainCurvatureStateSolver(probability=0)
         quantity = {
-
+            1 : {0, 1, 2},
+            2 : {3, 5, 6},
+            3 : {4, 7}
         }
+        np.random.seed(7)
+        assert False
+
 
 class TestPeriodicBoundary:
     def test_get_boundary(self):
