@@ -110,6 +110,7 @@ class TestGrainCurvatureStateSolver:
     ]
     """
     def test_next_elem(self):
+        np.random.seed(7)
         solver = core.GrainCurvatureStateSolver(probability=0.5)
         state = 0
         neighbors = [
@@ -118,8 +119,15 @@ class TestGrainCurvatureStateSolver:
             1, 0, 0
         ]
         assert solver.get_next_state(state, neighbors) == 1
+        neighbors = [
+            0, 1, 0,
+            1,    0,
+            1, 0, 0
+        ]
+        solver._probability = 0.07
+        assert solver.get_next_state(state, neighbors) == 0
 
-    def test_rule_five_more_neighbors(self):
+    def test_rule_five_more(self):
         solver = core.GrainCurvatureStateSolver()
         quantity = {
             3 : {0, 1, 2, 3, 4},
@@ -158,7 +166,7 @@ class TestGrainCurvatureStateSolver:
         }
         assert solver._rule_three_diagonal(quantity) is None
 
-    def test_rule_random_quanity(self):
+    def test_rule_random_choice(self):
         solver = core.GrainCurvatureStateSolver(probability=0)
         quantity = {
             1 : {0, 1, 2},
@@ -166,7 +174,9 @@ class TestGrainCurvatureStateSolver:
             3 : {4, 7}
         }
         np.random.seed(7)
-        assert False
+        assert solver._rule_random_choice(quantity) is None
+        solver._probability = 0.8
+        assert solver._rule_random_choice(quantity) == 2
 
 
 class TestPeriodicBoundary:
@@ -198,6 +208,11 @@ class TestSolverCreator:
         assert isinstance(solver._neighborhood, core.MooreNeighborhood)
         assert isinstance(solver._boundary, core.PeriodicBoundary)
         assert isinstance(solver._state_solver, core.SimpleStateSolver)
+        solver = creator.create(None, "periodic", "grain-curvature-probability:0.4")
+        assert isinstance(solver._neighborhood, core.MooreNeighborhood)
+        assert isinstance(solver._boundary, core.PeriodicBoundary)
+        assert isinstance(solver._state_solver, core.GrainCurvatureStateSolver)
+        assert solver._state_solver._probability == 0.4
 
 
 class TestMainController:

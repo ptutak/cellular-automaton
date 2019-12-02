@@ -151,12 +151,26 @@ class GrainCurvatureStateSolver(StateSolver):
                 return grain
         return None
 
+    def _rule_random_choice(self, quantity):
+        if np.random.sample() >= self._probability:
+            return None
+        chosen_grains = []
+        max_quantity = 0
+        for grain in quantity:
+            grain_quantity = len(quantity[grain])
+            if grain_quantity > max_quantity:
+                max_quantity = grain_quantity
+                chosen_grains = [grain]
+            elif grain_quantity == max_quantity:
+                chosen_grains.append(grain)
+        return np.random.choice(chosen_grains)
+
     def get_next_state(self, actual_state, neighbors):
         if actual_state != self._empty_id:
             return actual_state
         quantity = dict()
         for i, neighbor in enumerate(neighbors):
-            if neighbor != self._empty_id or neighbor == self._inclusion_id:
+            if neighbor == self._empty_id or neighbor == self._inclusion_id:
                 continue
             if neighbor in quantity:
                 quantity[neighbor].add(i)
@@ -164,6 +178,19 @@ class GrainCurvatureStateSolver(StateSolver):
                 quantity[neighbor] = {i}
         if not quantity:
             return self._empty_id
+        chosen_grain = self._rule_five_more(quantity)
+        if chosen_grain:
+            return chosen_grain
+        chosen_grain = self._rule_three_cross(quantity)
+        if chosen_grain:
+            return chosen_grain
+        chosen_grain = self._rule_three_diagonal(quantity)
+        if chosen_grain:
+            return chosen_grain
+        chosen_grain = self._rule_random_choice(quantity)
+        if chosen_grain:
+            return chosen_grain
+        return self._empty_id
 
 
 class SimpleStateSolver(StateSolver):
@@ -257,25 +284,32 @@ class Solver:
 
 
 class SolverCreator:
-    def create(self, neighborhood, boundary, state="left-standard"):
-        if neighborhood == "Moore":
+    def create(self, neighborhood, boundary, state="simple-random-standard"):
+        if state == "simple-random-standard":
+            state = SimpleStateSolver()
+            if neighborhood == "Moore":
+                neighborhood = MooreNeighborhood()
+            elif neighborhood == "Neumann":
+                neighborhood = NeumannNeighborhood()
+            elif neighborhood == "hexagonal-left":
+                neighborhood = HexagonalLeftNeighborhood()
+            elif neighborhood == "hexagonal-right":
+                neighborhood = HexagonalRightNeighborhood()
+            elif neighborhood == "hexagonal-random":
+                neighborhood = HexagonalRandom()
+            elif neighborhood == "pentagonal-left":
+                neighborhood = PentagonalLeft()
+            elif neighborhood == "pentagonal-right":
+                neighborhood = PentagonalRight()
+            elif neighborhood == "pentagonal-random":
+                neighborhood = PentagonalRandom()
+            else:
+                raise TypeError("No such neighborhood")
+        elif state.startswith("grain-curvature-probability:"):
+            state = GrainCurvatureStateSolver(probability=float(state.split(':')[-1]))
             neighborhood = MooreNeighborhood()
-        elif neighborhood == "Neumann":
-            neighborhood = NeumannNeighborhood()
-        elif neighborhood == "hexagonal-left":
-            neighborhood = HexagonalLeftNeighborhood()
-        elif neighborhood == "hexagonal-right":
-            neighborhood = HexagonalRightNeighborhood()
-        elif neighborhood == "hexagonal-random":
-            neighborhood = HexagonalRandom()
-        elif neighborhood == "pentagonal-left":
-            neighborhood = PentagonalLeft()
-        elif neighborhood == "pentagonal-right":
-            neighborhood = PentagonalRight()
-        elif neighborhood == "pentagonal-random":
-            neighborhood = PentagonalRandom()
         else:
-            raise TypeError("No such neighborhood")
+            raise TypeError("No such state solver")
 
         if boundary == "periodic":
             boundary = PeriodicBoundary()
@@ -283,11 +317,6 @@ class SolverCreator:
             boundary = AbsorbBoundary()
         else:
             raise TypeError("No such boundary")
-
-        if state == "left-standard":
-            state = SimpleStateSolver()
-        else:
-            raise TypeError("No such state solver")
 
         return Solver(neighborhood, boundary, state)
 
@@ -322,7 +351,7 @@ class MainController:
         with self._array_lock:
             self._array = self._array_builder.get_array()
 
-    def update_solver(self, neighborhood, boundary, state="left-standard"):
+    def update_solver(self, neighborhood, boundary, state="simple-random-standard"):
         with self._solver_lock:
             self._solver = self._solver_creator.create(
                 neighborhood,
