@@ -237,6 +237,9 @@ class Menu(tk.Frame):
     def __init__(self, controller, *args, **kwargs):
         super().__init__(controller, *args, **kwargs)
         self._controller = controller
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.columnconfigure(2, weight=1)
 
         self.startStopBtn = tk.Button(self, text='Start/Stop', command=self.startStopBtnAction, width=8)
         self.startStopBtn.grid(row=0, column=0)
@@ -308,9 +311,7 @@ class Body(tk.Frame):
         self._controller = controller
         self.menu = Menu(self)
         self.menu.grid(row=0, column=0, sticky=tk.W+tk.E)
-        self.menu.columnconfigure(0, weight=1)
-        self.menu.columnconfigure(1, weight=1)
-        self.menu.columnconfigure(2, weight=1)
+
 
         self.separator_0 = ttk.Separator(self)
         self.separator_0.grid(row=1, column=0, sticky=tk.W+tk.E)
