@@ -339,6 +339,11 @@ class TestArrayBuilder:
         builder = core.ArrayBuilder()
         assert builder.get_array() is None
 
+    def test_set_array(self):
+        builder = core.ArrayBuilder()
+        builder.set_array(np.ones((5, 5)))
+        assert np.array_equal(builder.get_array(), np.ones((5, 5)))
+
     def test_new_array(self):
         builder = core.ArrayBuilder()
         builder.new_array(3, 3)
@@ -409,3 +414,23 @@ class TestArrayBuilder:
             (1, 2),
             (2, 1),
             (2, 2)))
+
+    def test_remove_fields(self):
+        builder = core.ArrayBuilder()
+        builder.set_array(
+            np.array([
+                [5, 0, 0],
+                [1, 0, 1],
+                [3, 0, 0]
+            ], dtype=np.uint32)
+        )
+        builder.remove_grains([1])
+        array = builder.get_array()
+        assert np.array_equal(
+            np.array([
+                [5, 0, 0],
+                [0, 0, 0],
+                [3, 0, 0]
+            ], dtype=np.uint32),
+            array
+        )

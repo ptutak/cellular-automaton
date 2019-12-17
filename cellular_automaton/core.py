@@ -126,9 +126,9 @@ class StateSolver(ABC):
 
 
 class GrainCurvatureStateSolver(StateSolver):
-    def __init__(self, probability=0.5, empty_id=0, inclusion_id = np.uint32(-1)):
+    def __init__(self, probability=0.5, inclusion_id = np.uint32(-1)):
         self._probability = probability
-        self._empty_id = empty_id
+        self._empty_id = 0
         self._inclusion_id = inclusion_id
         self._cross_set = {1, 3, 4, 6}
         self._diagonal_set = {0, 2, 5, 7}
@@ -194,8 +194,8 @@ class GrainCurvatureStateSolver(StateSolver):
 
 
 class SimpleStateSolver(StateSolver):
-    def __init__(self, empty_id=0, inclusion_id=np.uint32(-1)):
-        self._empty_id = empty_id
+    def __init__(self, inclusion_id=np.uint32(-1)):
+        self._empty_id = 0
         self._inclusion_id = inclusion_id
 
     def get_next_state(self, actual_state, neighbors):
@@ -425,12 +425,26 @@ class ArrayBuilder:
         self._cmyk_max = cmyk_max
         self._array = None
         self._inclusion_value = inclusion_value
+        self._empty_id = 0
 
     def get_array(self):
         return self._array
 
+    def set_array(self, array):
+        self._array = array
+
     def new_array(self, height, width):
         self._array = np.zeros((height, width), dtype=np.uint32)
+
+    def remove_grains(self, id_set):
+        def get_proper_array_value(elem):
+            if elem in id_set:
+                return self._empty_id
+            return elem
+        new_array_gen = (get_proper_array_value(elem) for row in self._array for elem in row)
+        new_array = np.array(list(new_array_gen), dtype=np.uint32)
+        new_array.resize(self._array.shape)
+        self._array = new_array
 
     def add_seed(self, seed_num):
         empty_fields = sorted(self.get_empty_fields())
@@ -542,13 +556,14 @@ class ArrayBuilder:
         field_set = (
             (x, y) for x in range(self._array.shape[0])
             for y in range(self._array.shape[1])
-            if self._array[(x, y)])
+            if self._array[(x, y)] != self._empty_id
+        )
         return field_set
 
     def get_empty_fields(self):
         field_set = (
             (x, y) for x in range(self._array.shape[0])
             for y in range(self._array.shape[1])
-            if not self._array[(x, y)]
+            if self._array[(x, y)] == self._empty_id
         )
         return field_set
