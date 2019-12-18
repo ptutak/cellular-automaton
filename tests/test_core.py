@@ -267,6 +267,23 @@ class TestMainController:
             [0, 0, 0]
         ]))
 
+    def test_remove_fields(self):
+        controller = core.MainController()
+        controller._array = np.array([
+            [0, 0, 1],
+            [0, 0, 1],
+            [2, 0, 3]
+        ], dtype=np.uint32)
+        controller.remove_fields({1, 2})
+        array = next(controller.array_generator())
+        assert np.array_equal(
+            array,
+            np.array([
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 3]
+            ]))
+
     def test_open_gate(self):
         controller = core.MainController()
         controller._loop_on = False
@@ -439,7 +456,7 @@ class TestArrayBuilder:
                 [3, 0, 0]
             ], dtype=np.uint32)
         )
-        builder.remove_grains([1])
+        builder.remove_fields({1})
         array = builder.get_array()
         assert np.array_equal(
             np.array([

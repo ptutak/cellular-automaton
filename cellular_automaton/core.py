@@ -355,6 +355,12 @@ class MainController:
         with self._array_lock:
             self._array = np.zeros(self._array.shape)
 
+    def remove_fields(self, id_set):
+        with self._array_lock:
+            self._array_builder.set_array(self._array)
+            self._array_builder.remove_fields(id_set)
+            self._array = self._array_builder.get_array()
+
     def update_solver(self, neighborhood, boundary, state="simple-random-standard"):
         with self._solver_lock:
             self._solver = self._solver_creator.create(
@@ -440,7 +446,7 @@ class ArrayBuilder:
     def new_array(self, height, width):
         self._array = np.zeros((height, width), dtype=np.uint32)
 
-    def remove_grains(self, id_set):
+    def remove_fields(self, id_set):
         def get_proper_array_value(elem):
             if elem in id_set:
                 return self._empty_id
