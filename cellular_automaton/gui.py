@@ -343,7 +343,7 @@ class ResetMenu(tk.Frame):
             self.inclusionMenu.inclusionMaxRadiusVar.set(inclusion_min_radius)
             inclusion_max_radius = inclusion_min_radius
         values = {
-            "seeds_number": self.sizeGrainMenu.seedNumVar.get(),
+            "seed_number": self.sizeGrainMenu.seedNumVar.get(),
             "height": self.sizeGrainMenu.heightNumVar.get(),
             "width": self.sizeGrainMenu.widthNumVar.get(),
             "inclusion_number": self.inclusionMenu.inclusionNumVar.get(),

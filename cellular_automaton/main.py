@@ -29,7 +29,6 @@ class Main:
         view.grid(row=0, column=2, sticky=tk.N + tk.W + tk.S + tk.E)
         view.columnconfigure(0, weight=1)
         view.rowconfigure(0, weight=1)
-        view.update(next(self._controller.array_generator()))
 
         gui_root.columnconfigure(0, weight=0)
         gui_root.columnconfigure(2, weight=1)

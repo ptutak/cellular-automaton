@@ -361,6 +361,13 @@ class MainController:
             self._array_builder.remove_fields(id_set)
             self._array = self._array_builder.get_array()
 
+    def reseed(self, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
+        with self._array_lock:
+            self._array_builder.set_array(self._array)
+            self._array_builder.add_seed(seed_num)
+            self._array_builder.add_inclusions(inclusion_num, inc_min_radius, inc_max_radius)
+            self._array = self._array_builder.get_array()
+
     def update_solver(self, neighborhood, boundary, state="simple-random-standard"):
         with self._solver_lock:
             self._solver = self._solver_creator.create(

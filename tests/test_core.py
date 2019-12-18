@@ -284,6 +284,25 @@ class TestMainController:
                 [0, 0, 3]
             ]))
 
+    def test_reseed(self):
+        controller = core.MainController()
+        controller._array = np.array([
+            [0, 0, 1],
+            [0, 0, 1],
+            [2, 0, 3]
+        ], dtype=np.uint32)
+        np.random.seed(7)
+        controller.reseed(2, 0, 0, 0)
+        array = next(controller.array_generator())
+        assert np.array_equal(
+            array,
+            np.array([
+                [0, 1818769098, 1],
+                [0, 0, 1],
+                [2, 2228968745, 3]
+            ])
+        )
+
     def test_open_gate(self):
         controller = core.MainController()
         controller._loop_on = False
