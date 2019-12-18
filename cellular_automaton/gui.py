@@ -156,7 +156,7 @@ class StateRadioMenu(tk.Frame):
 class RadioNeighBoundMenu(tk.Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        self.columnconfigure(0, weight=1)
         self.stateSolverVar = tk.StringVar(self)
         self.stateSolverVar.set("simple-random-standard")
         self.stateSolverVar.trace_variable('w', self.disable_unused_entries)
@@ -305,6 +305,54 @@ class Inclusions(tk.Frame):
         self.inclusionMaxRadiusEntry.grid(row=2, column=1, sticky=tk.E)
 
 
+class ResetMenu(tk.Frame):
+    def __init__(self, controller, *args, **kwargs):
+        super().__init__(controller, *args, **kwargs)
+        self._controller = controller
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.resetLabel = tk.Label(self, text="Reset options")
+        self.resetLabel.grid(row=0, column=0, columnspan=2, sticky=tk.W+tk.E)
+        self.sizeGrainMenu = SizeGrainMenu(self)
+        self.sizeGrainMenu.grid(row=1, column=0, columnspan=2, sticky=tk.W+tk.E)
+        self.inclusionMenu = Inclusions(self)
+        self.inclusionMenu.grid(row=2, column=0, columnspan=2, sticky=tk.W+tk.E)
+
+        self.clearButton = tk.Button(self, text="Clear", command=self.clearBtnAction)
+        self.clearButton.grid(row=3, column=0, sticky=tk.W+tk.E)
+
+        self.clearSelectedButton = tk.Button(self, text="Clear selected", command=self.clearSelectedBtnAction)
+        self.clearSelectedButton.grid(row=4, column=0, sticky=tk.W+tk.E)
+
+        self.reseedButton = tk.Button(self, text="Reseed", command=self.reseedBtnAction)
+        self.reseedButton.grid(row=3, column=1, sticky=tk.W+tk.E)
+
+    def clearBtnAction(self):
+        self._controller.clear()
+
+    def clearSelectedBtnAction(self):
+        self._controller.clear_selected()
+
+    def reseedBtnAction(self):
+        self._controller.reseed()
+
+    def getResetValues(self):
+        inclusion_min_radius = self.inclusionMenu.inclusionMinRadiusVar.get()
+        inclusion_max_radius = self.inclusionMenu.inclusionMaxRadiusVar.get()
+        if inclusion_max_radius < inclusion_min_radius:
+            self.inclusionMenu.inclusionMaxRadiusVar.set(inclusion_min_radius)
+            inclusion_max_radius = inclusion_min_radius
+        values = {
+            "seeds_number": self.sizeGrainMenu.seedNumVar.get(),
+            "height": self.sizeGrainMenu.heightNumVar.get(),
+            "width": self.sizeGrainMenu.widthNumVar.get(),
+            "inclusion_number": self.inclusionMenu.inclusionNumVar.get(),
+            "inclusion_min_radius": inclusion_min_radius,
+            "inclusion_max_radius": inclusion_max_radius
+        }
+        return values
+
+
 class Body(tk.Frame):
     def __init__(self, controller, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -312,47 +360,40 @@ class Body(tk.Frame):
         self.menu = Menu(self)
         self.menu.grid(row=0, column=0, sticky=tk.W+tk.E)
 
-
         self.separator_0 = ttk.Separator(self)
         self.separator_0.grid(row=1, column=0, sticky=tk.W+tk.E)
 
         self.radioMenu = RadioNeighBoundMenu(self)
         self.radioMenu.grid(row=2, column=0, sticky=tk.W+tk.E)
-        self.radioMenu.columnconfigure(0, weight=1)
+
         self.separator_1 = ttk.Separator(self)
         self.separator_1.grid(row=3, column=0, sticky=tk.W+tk.E)
 
-        self.resetLabel = tk.Label(self, text="Reset options")
-        self.resetLabel.grid(row=4, column=0, sticky=tk.W+tk.E)
-        self.sizeGrainMenu = SizeGrainMenu(self)
-        self.sizeGrainMenu.grid(row=5, column=0, sticky=tk.W+tk.E)
-        self.inclusionMenu = Inclusions(self)
-        self.inclusionMenu.grid(row=6, column=0, sticky=tk.W+tk.E)
-
+        self.resetMenu = ResetMenu(self)
+        self.resetMenu.grid(row=3, column=0, sticky=tk.W+tk.E)
 
     def start_stop(self):
         self._controller.start_stop()
 
-    def reset(self):
-        seed_number = self.sizeGrainMenu.seedNumVar.get()
-        height = self.sizeGrainMenu.heightNumVar.get()
-        width = self.sizeGrainMenu.widthNumVar.get()
+    def clear(self):
+        pass
 
-        inclusion_number = self.inclusionMenu.inclusionNumVar.get()
-        inclusion_min_radius = self.inclusionMenu.inclusionMinRadiusVar.get()
-        inclusion_max_radius = self.inclusionMenu.inclusionMaxRadiusVar.get()
-        if inclusion_max_radius < inclusion_min_radius:
-            self.inclusionMenu.inclusionMaxRadiusVar.set(inclusion_min_radius)
-            inclusion_max_radius = inclusion_min_radius
+    def clear_selected(self):
+        pass
+
+    def reseed(self):
+        pass
+
+    def reset(self):
+        values = self.resetMenu.getResetValues()
         self._controller.reset(
-            height,
-            width,
-            seed_number,
-            inclusion_number,
-            inclusion_min_radius,
-            inclusion_max_radius)
-        self._controller.start_stop()
-        self._controller.start_stop()
+            values['height'],
+            values['width'],
+            values['seed_number'],
+            values['inclusion_number'],
+            values['inclusion_min_radius'],
+            values['inclusion_max_radius'])
+        self._controller.next_step()
 
     def update(self):
         boundary = self.radioMenu.get_boundary()
@@ -383,13 +424,18 @@ class Body(tk.Frame):
 
 
 class View(tk.Frame):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, controller, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
         self._image = None
+        self._array = None
+        self._controller = controller
         self.panel = tk.Label(self)
         self.panel.grid(row=0, column=0)
 
     def update(self, array):
+        self._array = array
         image = Image.fromarray(array, 'CMYK')
         image = image.resize((image.width*3, image.height*3))
         self._image = ImageTk.PhotoImage(image=image)

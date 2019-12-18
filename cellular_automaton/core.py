@@ -351,6 +351,10 @@ class MainController:
         with self._array_lock:
             self._array = self._array_builder.get_array()
 
+    def clear(self):
+        with self._array_lock:
+            self._array = np.zeros(self._array.shape)
+
     def update_solver(self, neighborhood, boundary, state="simple-random-standard"):
         with self._solver_lock:
             self._solver = self._solver_creator.create(

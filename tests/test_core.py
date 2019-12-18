@@ -9,7 +9,6 @@ class TestNeighborhood:
         valid_neighbors = {(0,0), (0,1), (0,2), (1,0), (1,2), (2,0), (2,1), (2,2)}
         assert neighbors == valid_neighbors
 
-
     def test_neumann(self):
         neumann = core.NeumannNeighborhood()
         neighbors = set(neumann.get_neighbors(1,1))
@@ -253,6 +252,21 @@ class TestMainController:
         ])
         assert np.array_equal(array, good_array)
 
+    def test_clear(self):
+        controller = core.MainController()
+        controller._array = np.array([
+            [0, 0, 1],
+            [0, 0, 1],
+            [2, 0, 3]
+        ], dtype=np.uint32)
+        controller.clear()
+        array = next(controller.array_generator())
+        assert np.array_equal(array, np.array([
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0]
+        ]))
+
     def test_open_gate(self):
         controller = core.MainController()
         controller._loop_on = False
@@ -333,6 +347,7 @@ class TestMainController:
         ], dtype=np.uint32)
         os.remove(filename)
         assert np.array_equal(good_array, controller._array)
+
 
 class TestArrayBuilder:
     def test_get_array(self):
