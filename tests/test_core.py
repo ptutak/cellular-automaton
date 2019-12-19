@@ -485,3 +485,39 @@ class TestArrayBuilder:
             ], dtype=np.uint32),
             array
         )
+
+
+class TestGrainHistory:
+    def test_log_grain(self):
+        history = core.GrainHistory()
+        history.log_grain(4)
+        history.log_grain(1)
+        history.log_grain(3)
+        assert history._present_log_entry == {1, 3, 4}
+
+    def test_log_grains(self):
+        history = core.GrainHistory()
+        history.log_grains([1,2,4])
+        assert history.get_log() == [[1, 2, 4]]
+
+    def test_new_grain(self):
+        history = core.GrainHistory()
+        history.new_phase()
+        history.log_grain(5)
+        history.log_grain(3)
+        history.new_phase()
+        history.log_grain(4)
+        history.log_grain(1)
+        history.new_phase()
+        assert history._log == [[3, 5], [1, 4]]
+
+    def test_get_history(self):
+        history = core.GrainHistory()
+        history.log_grain(5)
+        history.log_grain(3)
+        history.new_phase()
+        history.log_grain(4)
+        history.log_grain(1)
+        assert history.get_log() == [[3, 5], [1, 4]]
+        history.log_grain(2)
+        assert history.get_log() == [[3, 5], [1, 2, 4]]

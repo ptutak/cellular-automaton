@@ -1,5 +1,6 @@
 import numpy as np
 import threading
+from copy import deepcopy
 from abc import ABC, abstractmethod
 from PIL import Image
 from fractions import Fraction
@@ -321,6 +322,32 @@ class SolverCreator:
         return Solver(neighborhood, boundary, state)
 
 
+class GrainHistory:
+    def __init__(self):
+        self._log = list()
+        self._present_log_entry = set()
+
+    def log_grain(self, grain):
+        self._present_log_entry.add(grain)
+
+    def log_grains(self, grains):
+        for grain in grains:
+            self._present_log_entry.add(grain)
+
+    def new_phase(self):
+        present_log = sorted(self._present_log_entry)
+        if present_log:
+            self._log.append(present_log)
+        self._present_log_entry = set()
+
+    def get_log(self):
+        present_log = sorted(self._present_log_entry)
+        log = deepcopy(self._log)
+        if present_log:
+            log.append(present_log)
+        return log
+
+
 class MainController:
     def __init__(self):
         self._solver_creator = SolverCreator()
@@ -335,6 +362,7 @@ class MainController:
         self._loop_gate = threading.Event()
         self._delay = None
         self._delay_lock = threading.Lock()
+        self._grain_history = GrainHistory()
 
     def array_generator(self):
         while True:

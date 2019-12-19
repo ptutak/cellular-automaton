@@ -431,12 +431,20 @@ class View(tk.Frame):
         self._image = None
         self._array = None
         self._controller = controller
-        self.panel = tk.Label(self)
-        self.panel.grid(row=0, column=0)
+        self._panel = tk.Label(self)
+        self._panel.grid(row=0, column=0)
+        self._panel.bind('<Button-1>', self.image_click)
+        self._info = tk.Label(self, text="Grain id's selected:")
+        self._info.grid(row=1, column=0, sticky=tk.W)
+        self._grain_selected = tk.Label(self, text="")
+        self._grain_selected.grid(row=2, column=0, sticky=tk.W)
+
+    def image_click(self, event):
+        print(event.x, event.y)
 
     def update(self, array):
         self._array = array
         image = Image.fromarray(array, 'CMYK')
         image = image.resize((image.width*3, image.height*3))
         self._image = ImageTk.PhotoImage(image=image)
-        self.panel.configure(image=self._image)
+        self._panel.configure(image=self._image)

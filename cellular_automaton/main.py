@@ -25,7 +25,7 @@ class Main:
         separator = ttk.Separator(gui_root, orient=tk.VERTICAL)
         separator.grid(row=0, column=1, sticky=tk.N + tk.S)
 
-        view = gui.View(self, gui_root)
+        view = gui.View(self._controller, gui_root)
         view.grid(row=0, column=2, sticky=tk.N + tk.W + tk.S + tk.E)
         view.columnconfigure(0, weight=1)
         view.rowconfigure(0, weight=1)
