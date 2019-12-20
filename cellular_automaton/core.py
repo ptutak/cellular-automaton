@@ -366,8 +366,6 @@ class GrainHistory:
             self._log[i] = sorted(set(log_entry) - grains)
         self._present_log_entry -= grains
 
-
-
     def clear(self):
         self._present_log_entry = set()
         self._log = list()
