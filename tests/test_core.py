@@ -479,7 +479,10 @@ class TestArrayBuilder:
     def test_filled_circle(self):
         builder = core.ArrayBuilder()
         circle = builder.filled_circle(5, 5, 2)
-        good_circle = {(6, 4), (5, 4), (4, 7), (6, 6), (5, 6), (4, 5), (7, 5), (6, 5), (3, 5), (5, 3), (6, 7), (5, 5), (4, 6), (7, 6), (5, 7), (4, 4), (6, 3), (7, 4), (4, 3), (3, 6), (3, 4)}
+        good_circle = {
+            (6, 4), (5, 4), (4, 7), (6, 6), (5, 6), (4, 5), (7, 5),
+            (6, 5), (3, 5), (5, 3), (6, 7), (5, 5), (4, 6), (7, 6),
+            (5, 7), (4, 4), (6, 3), (7, 4), (4, 3), (3, 6), (3, 4)}
         assert circle == good_circle
 
     def test_get_filled_fields(self):
@@ -579,6 +582,14 @@ class TestGrainHistory:
         history.log_grains([4, 2])
         history.clear()
         assert history.get_log() == []
+
+    def test_remove_grains(self):
+        history = core.GrainHistory()
+        history.log_grains([1, 2, 3])
+        history.new_phase()
+        history.log_grains([4, 5, 6])
+        history.remove_grains([1, 4])
+        assert history.get_log() == [[2, 3], [5, 6]]
 
 
 class TestSeedSelector:

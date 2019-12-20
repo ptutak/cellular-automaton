@@ -360,6 +360,14 @@ class GrainHistory:
             log.append(present_log)
         return log
 
+    def remove_grains(self, grains):
+        grains = set(grains)
+        for i, log_entry in enumerate(self._log):
+            self._log[i] = sorted(set(log_entry) - grains)
+        self._present_log_entry -= grains
+
+
+
     def clear(self):
         self._present_log_entry = set()
         self._log = list()
@@ -396,6 +404,8 @@ class MainController:
         self._delay_lock = threading.Lock()
         self._grain_history = GrainHistory()
         self._grain_history_lock = threading.Lock()
+        self._seed_selector = SeedSelector()
+        self._seed_selector_lock = threading.Lock()
 
     def array_generator(self):
         while True:
@@ -421,10 +431,13 @@ class MainController:
         with self._grain_history_lock:
             self._grain_history.clear()
 
-    def remove_fields(self, id_set):
+    def remove_selected_fields(self):
         with self._array_lock:
             self._array_builder.set_array(self._array)
-            self._array_builder.remove_fields(id_set)
+            with self._seed_selector_lock:
+                selected = self._seed_selector.get_selected()
+            self._array_builder.remove_fields(selected)
+            self._grain_history
             self._array = self._array_builder.get_array()
 
     def reseed(self, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
