@@ -125,12 +125,16 @@ class StateSolver(ABC):
     def get_next_state(self, actual_state, neighbors):
         pass
 
+    @abstractmethod
+    def ignore_ids(self, ids):
+        pass
+
 
 class GrainCurvatureStateSolver(StateSolver):
     def __init__(self, probability=0.5, inclusion_id = np.uint32(-1)):
         self._probability = probability
         self._empty_id = 0
-        self._inclusion_id = inclusion_id
+        self._ignored_ids = {inclusion_id, self._empty_id}
         self._cross_set = {1, 3, 4, 6}
         self._diagonal_set = {0, 2, 5, 7}
 
@@ -166,12 +170,15 @@ class GrainCurvatureStateSolver(StateSolver):
                 chosen_grains.append(grain)
         return np.random.choice(chosen_grains)
 
+    def ignore_ids(self, ids):
+        self._ignored_ids |= set(ids)
+
     def get_next_state(self, actual_state, neighbors):
         if actual_state != self._empty_id:
             return actual_state
         quantity = dict()
         for i, neighbor in enumerate(neighbors):
-            if neighbor == self._empty_id or neighbor == self._inclusion_id:
+            if neighbor in self._ignored_ids:
                 continue
             if neighbor in quantity:
                 quantity[neighbor].add(i)
@@ -197,14 +204,17 @@ class GrainCurvatureStateSolver(StateSolver):
 class SimpleStateSolver(StateSolver):
     def __init__(self, inclusion_id=np.uint32(-1)):
         self._empty_id = 0
-        self._inclusion_id = inclusion_id
+        self._ignored_ids = {inclusion_id, self._empty_id}
+
+    def ignore_ids(self, ids):
+        self._ignored_ids |= set(ids)
 
     def get_next_state(self, actual_state, neighbors):
         if actual_state:
             return actual_state
         quantity = dict()
         for neighbor in neighbors:
-            if not neighbor or neighbor == self._inclusion_id:
+            if neighbor in self._ignored_ids:
                 continue
             if neighbor in quantity:
                 quantity[neighbor] += 1
@@ -269,6 +279,9 @@ class Solver:
             index_value,
             (self._boundary.get_value(x, array, height, width)
              for x in self._neighborhood.get_neighbors(index[0], index[1])))
+
+    def add_ignored_ids(self, ids):
+        self._state_solver.ignore_ids(ids)
 
     def next_step(self, array):
         height = len(array)
@@ -347,6 +360,25 @@ class GrainHistory:
             log.append(present_log)
         return log
 
+    def clear(self):
+        self._present_log_entry = set()
+        self._log = list()
+
+
+class SeedSelector:
+    def __init__(self):
+        self._selected = set()
+
+    def toggle_seed(self, seed):
+        if seed in self._selected:
+            self._selected.remove(seed)
+        else:
+            self._selected.add(seed)
+
+    def get_selected(self):
+        selected = self._selected
+        self._selected = set()
+        return selected
 
 class MainController:
     def __init__(self):
@@ -363,6 +395,7 @@ class MainController:
         self._delay = None
         self._delay_lock = threading.Lock()
         self._grain_history = GrainHistory()
+        self._grain_history_lock = threading.Lock()
 
     def array_generator(self):
         while True:
@@ -374,14 +407,19 @@ class MainController:
 
     def reset(self, height, width, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
         self._array_builder.new_array(height, width)
-        self._array_builder.add_seed(seed_num)
+        added_seeds = self._array_builder.add_seed(seed_num)
         self._array_builder.add_inclusions(inclusion_num, inc_min_radius, inc_max_radius)
         with self._array_lock:
             self._array = self._array_builder.get_array()
+            with self._grain_history_lock:
+                self._grain_history.clear()
+                self._grain_history.log_grains(added_seeds)
 
     def clear(self):
         with self._array_lock:
             self._array = np.zeros(self._array.shape)
+        with self._grain_history_lock:
+            self._grain_history.clear()
 
     def remove_fields(self, id_set):
         with self._array_lock:
@@ -392,9 +430,18 @@ class MainController:
     def reseed(self, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
         with self._array_lock:
             self._array_builder.set_array(self._array)
-            self._array_builder.add_seed(seed_num)
+            added_seeds = self._array_builder.add_seed(seed_num)
+            with self._grain_history_lock:
+                self._grain_history.log_grains(added_seeds)
             self._array_builder.add_inclusions(inclusion_num, inc_min_radius, inc_max_radius)
             self._array = self._array_builder.get_array()
+
+    def new_phase(self):
+        with self._grain_history_lock:
+            self._grain_history.new_phase()
+            log = self._grain_history.get_log()
+        with self._solver_lock:
+            self._solver.add_ignored_ids(log[-1])
 
     def update_solver(self, neighborhood, boundary, state="simple-random-standard"):
         with self._solver_lock:
@@ -465,12 +512,13 @@ class ArrayBuilder:
     def __init__(self,
                  cmyk_min=np.uint32(np.iinfo(np.uint32).max * 1 / 5),
                  cmyk_max=np.uint32(np.iinfo(np.uint32).max * 3 / 5),
-                 inclusion_value=np.uint32(-1)):
+                 inclusion_id=np.uint32(-1)):
         self._cmyk_min = cmyk_min
         self._cmyk_max = cmyk_max
         self._array = None
-        self._inclusion_value = inclusion_value
+        self._inclusion_id = inclusion_id
         self._empty_id = 0
+        self._seed_ids = set()
 
     def get_array(self):
         return self._array
@@ -494,14 +542,21 @@ class ArrayBuilder:
     def add_seed(self, seed_num):
         empty_fields = sorted(self.get_empty_fields())
         seed_coords_indices = np.random.choice(np.arange(len(empty_fields)), seed_num)
-
+        present_seeds = self.get_seed_ids()
+        added_seeds = set()
         for index in seed_coords_indices:
-            self._array[empty_fields[index]] = np.random.randint(
-                self._cmyk_min,
-                self._cmyk_max,
-                dtype=np.uint32)
+            while True:
+                seed = np.random.randint(
+                    self._cmyk_min,
+                    self._cmyk_max,
+                    dtype=np.uint32)
+                if seed not in present_seeds and seed not in added_seeds:
+                    break
+            added_seeds.add(seed)
+            self._array[empty_fields[index]] = seed
+        return added_seeds
 
-    def horizontal_line(self, x0, y0, y1):
+    def _horizontal_line(self, x0, y0, y1):
         point_set = set()
         for y in range(y0, y1 + 1):
             point_set.add((x0, y))
@@ -516,7 +571,7 @@ class ArrayBuilder:
         point_set = set()
         point_set.add((x0, y0 + radius))
         point_set.add((x0, y0 - radius))
-        point_set |= self.horizontal_line(x0, y0 - radius, y0 + radius)
+        point_set |= self._horizontal_line(x0, y0 - radius, y0 + radius)
         point_set.add((x0 + radius, y0))
         point_set.add((x0 - radius, y0))
 
@@ -536,10 +591,10 @@ class ArrayBuilder:
             point_set.add((x0 - y, y0 + x))
             point_set.add((x0 + y, y0 - x))
             point_set.add((x0 - y, y0 - x))
-            point_set |= self.horizontal_line(x0 + x, y0 - y, y0 + y)
-            point_set |= self.horizontal_line(x0 - x, y0 - y, y0 + y)
-            point_set |= self.horizontal_line(x0 + y, y0 - x, y0 + x)
-            point_set |= self.horizontal_line(x0 - y, y0 - x, y0 + x)
+            point_set |= self._horizontal_line(x0 + x, y0 - y, y0 + y)
+            point_set |= self._horizontal_line(x0 - x, y0 - y, y0 + y)
+            point_set |= self._horizontal_line(x0 + y, y0 - x, y0 + x)
+            point_set |= self._horizontal_line(x0 - y, y0 - x, y0 + x)
 
         return point_set
 
@@ -595,7 +650,7 @@ class ArrayBuilder:
             inclusion_circles |= filled_circle
 
         for coords in inclusion_circles:
-            self._array[coords] = self._inclusion_value
+            self._array[coords] = self._inclusion_id
 
     def get_filled_fields(self):
         field_set = (
@@ -612,3 +667,10 @@ class ArrayBuilder:
             if self._array[(x, y)] == self._empty_id
         )
         return field_set
+
+    def get_seed_ids(self):
+        ids = {
+            x for row in self._array
+            for x in row
+            if x != self._empty_id and x != self._inclusion_id}
+        return ids

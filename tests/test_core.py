@@ -84,6 +84,14 @@ class TestSolver:
         values = [0,0,1,0,0,0,1,0]
         assert values == list(solver._get_neighbor_values(array, (0,0))[1])
 
+    def test_add_ignored_ids(self):
+        neighborhood = core.MooreNeighborhood()
+        state_solver = core.SimpleStateSolver()
+        boundary = core.PeriodicBoundary()
+        solver = core.Solver(neighborhood, boundary, state_solver)
+        solver.add_ignored_ids([5, 6, 7])
+        assert solver._state_solver._ignored_ids == {0, 5, 6, 7, 0xffffffff}
+
 
 class TestSimpleStateSolver:
     def test_next_elem(self):
@@ -98,6 +106,13 @@ class TestSimpleStateSolver:
         state_solver = core.SimpleStateSolver()
         new_state = state_solver.get_next_state(array[(1,1)], neighbors_1_1)
         assert new_state == 1
+
+    def test_ignore_ids(self):
+        solver = core.SimpleStateSolver()
+        assert solver._ignored_ids == {0, 0xffffffff}
+        solver.ignore_ids([5, 6])
+        assert solver._ignored_ids == {0, 5, 6, 0xffffffff}
+
 
 class TestGrainCurvatureStateSolver:
     """
@@ -176,6 +191,12 @@ class TestGrainCurvatureStateSolver:
         assert solver._rule_random_choice(quantity) is None
         solver._probability = 0.8
         assert solver._rule_random_choice(quantity) == 2
+
+    def test_ignore_ids(self):
+        solver = core.GrainCurvatureStateSolver(probability=0)
+        assert solver._ignored_ids == {0, np.uint32(-1)}
+        solver.ignore_ids([3, 4])
+        assert solver._ignored_ids == {0, 3, 4, np.uint32(-1)}
 
 
 class TestPeriodicBoundary:
@@ -384,6 +405,24 @@ class TestMainController:
         os.remove(filename)
         assert np.array_equal(good_array, controller._array)
 
+    def test_new_phase(self):
+        controller = core.MainController()
+        controller._array = np.array([
+            [0, 0, 1],
+            [0, 0, 1],
+            [2, 0, 3]
+        ], dtype=np.uint32)
+        controller._grain_history.log_grains([1, 2, 3])
+        controller.new_phase()
+        next(controller.array_generator())
+        assert np.array_equal(
+            next(controller.array_generator()),
+            np.array([
+                [0, 0, 1],
+                [0, 0, 1],
+                [2, 0, 3]
+            ]))
+
 
 class TestArrayBuilder:
     def test_get_array(self):
@@ -430,11 +469,11 @@ class TestArrayBuilder:
 
     def test_horizontal_line(self):
         builder = core.ArrayBuilder()
-        line = builder.horizontal_line(5, -3, 0)
+        line = builder._horizontal_line(5, -3, 0)
         assert line == set(((5, -3), (5, -2), (5, -1), (5, 0)))
-        line = builder.horizontal_line(5, 0, -3)
+        line = builder._horizontal_line(5, 0, -3)
         assert line == set()
-        line = builder.horizontal_line(5, 0, 0)
+        line = builder._horizontal_line(5, 0, 0)
         assert line == set(((5, 0),))
 
     def test_filled_circle(self):
@@ -486,6 +525,17 @@ class TestArrayBuilder:
             array
         )
 
+    def test_get_seed_ids(self):
+        builder = core.ArrayBuilder()
+        builder.set_array(
+            np.array([
+                [5, 0, 0],
+                [1, 0, 1],
+                [3, 0, 3]
+            ], dtype=np.uint32)
+        )
+        assert builder.get_seed_ids() == {1, 3, 5}
+
 
 class TestGrainHistory:
     def test_log_grain(self):
@@ -521,3 +571,27 @@ class TestGrainHistory:
         assert history.get_log() == [[3, 5], [1, 4]]
         history.log_grain(2)
         assert history.get_log() == [[3, 5], [1, 2, 4]]
+
+    def test_clear_history(self):
+        history = core.GrainHistory()
+        history.log_grains([5, 3])
+        history.new_phase()
+        history.log_grains([4, 2])
+        history.clear()
+        assert history.get_log() == []
+
+
+class TestSeedSelector:
+    def test_toggle_grain(self):
+        selector = core.SeedSelector()
+        selector.toggle_seed(5)
+        selector.toggle_seed(4)
+        selector.toggle_seed(5)
+        selector.toggle_seed(3)
+        assert selector.get_selected() == {3, 4}
+        assert selector.get_selected() == set()
+
+    def test_get_selected(self):
+        selector = core.SeedSelector()
+        selector._selected = set([3, 5, 4])
+        assert selector.get_selected() == {3, 4, 5}
