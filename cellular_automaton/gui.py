@@ -327,6 +327,9 @@ class ResetMenu(tk.Frame):
         self.reseedButton = tk.Button(self, text="Reseed", command=self.reseedBtnAction)
         self.reseedButton.grid(row=3, column=1, sticky=tk.W+tk.E)
 
+        self.newPhaseButton = tk.Button(self, text="New phase", command=self.newPhaseBtnAction)
+        self.newPhaseButton.grid(row=4, column=1, sticky=tk.W+tk.E)
+
     def clearBtnAction(self):
         self._controller.clear()
 
@@ -335,6 +338,9 @@ class ResetMenu(tk.Frame):
 
     def reseedBtnAction(self):
         self._controller.reseed()
+
+    def newPhaseBtnAction(self):
+        self._controller.new_phase()
 
     def getResetValues(self):
         inclusion_min_radius = self.inclusionMenu.inclusionMinRadiusVar.get()
@@ -376,13 +382,22 @@ class Body(tk.Frame):
         self._controller.start_stop()
 
     def clear(self):
-        pass
+        self._controller.clear()
 
     def clear_selected(self):
-        pass
+        self._controller.remove_selected_fields()
+
+    def new_phase(self):
+        self._controller.new_phase()
 
     def reseed(self):
-        pass
+        values = self.resetMenu.getResetValues()
+        self._controller.reseed(
+            values['seed_number'],
+            values['inclusion_number'],
+            values['inclusion_min_radius'],
+            values['inclusion_max_radius']
+        )
 
     def reset(self):
         values = self.resetMenu.getResetValues()
@@ -438,9 +453,19 @@ class View(tk.Frame):
         self._info.grid(row=1, column=0, sticky=tk.W)
         self._grain_selected = tk.Label(self, text="")
         self._grain_selected.grid(row=2, column=0, sticky=tk.W)
+        self._grain_selected_memo = tk.Label(self, text="")
+        self._grain_selected_memo.grid(row=3, column=0, sticky=tk.W)
 
     def image_click(self, event):
-        print(event.x, event.y)
+        column = event.x // 3
+        row = event.y // 3
+        if row >= self._array.shape[0]:
+            row = self._array.shape[0] - 1
+        if column >= self._array.shape[1]:
+            column = self._array.shape[1] - 1
+        grain = self._array[(row, column)]
+        self._controller.select_field(grain)
+        self._grain_selected_memo.configure(text=str(self._controller.get_selected()))
 
     def update(self, array):
         self._array = array

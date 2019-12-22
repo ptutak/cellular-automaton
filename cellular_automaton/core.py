@@ -382,9 +382,12 @@ class SeedSelector:
             self._selected.add(seed)
 
     def get_selected(self):
-        selected = self._selected
-        self._selected = set()
+        selected = deepcopy(self._selected)
         return selected
+
+    def clear(self):
+        self._selected = set()
+
 
 class MainController:
     def __init__(self):
@@ -429,13 +432,23 @@ class MainController:
         with self._grain_history_lock:
             self._grain_history.clear()
 
+    def select_field(self, field):
+        if field:
+            with self._seed_selector_lock:
+                self._seed_selector.toggle_seed(field)
+
+    def get_selected(self):
+        with self._seed_selector_lock:
+            return self._seed_selector.get_selected()
+
     def remove_selected_fields(self):
         with self._array_lock:
             self._array_builder.set_array(self._array)
             with self._seed_selector_lock:
                 selected = self._seed_selector.get_selected()
+                self._seed_selector.clear()
             self._array_builder.remove_fields(selected)
-            self._grain_history
+            self._grain_history.remove_grains(selected)
             self._array = self._array_builder.get_array()
 
     def reseed(self, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
@@ -452,7 +465,8 @@ class MainController:
             self._grain_history.new_phase()
             log = self._grain_history.get_log()
         with self._solver_lock:
-            self._solver.add_ignored_ids(log[-1])
+            if log:
+                self._solver.add_ignored_ids(log[-1])
 
     def update_solver(self, neighborhood, boundary, state="simple-random-standard"):
         with self._solver_lock:

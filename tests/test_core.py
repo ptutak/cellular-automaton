@@ -288,14 +288,18 @@ class TestMainController:
             [0, 0, 0]
         ]))
 
-    def test_remove_fields(self):
+    def test_remove_selected_fields(self):
         controller = core.MainController()
         controller._array = np.array([
             [0, 0, 1],
             [0, 0, 1],
             [2, 0, 3]
         ], dtype=np.uint32)
-        controller.remove_fields({1, 2})
+        controller._grain_history.log_grains({1, 2, 3})
+        controller.new_phase()
+        controller.select_field(1)
+        controller.select_field(2)
+        controller.remove_selected_fields()
         array = next(controller.array_generator())
         assert np.array_equal(
             array,
@@ -304,6 +308,13 @@ class TestMainController:
                 [0, 0, 0],
                 [0, 0, 3]
             ]))
+        assert controller._grain_history.get_log() == [[3]]
+
+    def test_select_fields(self):
+        controller = core.MainController()
+        controller.select_field(1)
+        controller.select_field(2)
+        assert controller._seed_selector.get_selected() == {1, 2}
 
     def test_reseed(self):
         controller = core.MainController()
@@ -369,6 +380,12 @@ class TestMainController:
         assert controller.get_delay() is None
         controller.update_delay(0.5)
         assert controller.get_delay() == 0.5
+
+    def test_get_selected(self):
+        controller = core.MainController()
+        controller.select_field(5)
+        controller.select_field(4)
+        assert controller.get_selected() == {4, 5}
 
     def test_save(self):
         controller = core.MainController()
@@ -600,9 +617,15 @@ class TestSeedSelector:
         selector.toggle_seed(5)
         selector.toggle_seed(3)
         assert selector.get_selected() == {3, 4}
-        assert selector.get_selected() == set()
+        assert selector.get_selected() == {3, 4}
 
     def test_get_selected(self):
         selector = core.SeedSelector()
         selector._selected = set([3, 5, 4])
         assert selector.get_selected() == {3, 4, 5}
+
+    def test_clear(self):
+        selector = core.SeedSelector()
+        selector._selected = set([3, 4, 5])
+        selector.clear()
+        assert selector.get_selected() == set()
