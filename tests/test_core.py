@@ -260,6 +260,21 @@ class TestMainController:
         array = next(arrays)
         assert np.array_equal(array, np.zeros((3, 3), np.int32))
 
+    def test_array_vision_generator(self):
+        controller = core.MainController()
+        arrays = controller.array_vision_generator()
+        array = np.array([
+            [1, 0, 3],
+            [0, 0, 0],
+            [1, 0, 0]
+        ], dtype=np.uint32)
+
+        controller._array = array
+        next_array = next(arrays)
+        assert np.array_equal(next_array, array)
+        next_array = next(arrays)
+        assert np.array_equal(next_array, array)
+
     def test_reset(self):
         controller = core.MainController()
         np.random.seed(7)
@@ -609,6 +624,14 @@ class TestGrainHistory:
         history.remove_grains([1, 4])
         assert history.get_log() == [(2, 3), {5, 6}]
 
+    def test_set_log(self):
+        history = core.GrainHistory()
+        history_log = [(1,2,3), {4, 5}]
+        history.set_log(history_log)
+        assert history._present_log_entry == {4, 5}
+        assert history._log == [(1, 2, 3)]
+        history.set_log([(1, 2, 3), (4, 5)])
+        assert history._log == [(1, 2, 3), (4, 5)]
 
 class TestSeedSelector:
     def test_toggle_grain(self):

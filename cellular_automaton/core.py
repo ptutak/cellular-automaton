@@ -370,6 +370,15 @@ class GrainHistory:
         self._present_log_entry = set()
         self._log = list()
 
+    def set_log(self, history):
+        if not history:
+            return
+        if isinstance(history[-1], set):
+            self._present_log_entry = deepcopy(history[-1])
+            self._log = history[:-1]
+        else:
+            self._log = deepcopy(history)
+
 
 class SeedSelector:
     def __init__(self):
@@ -414,6 +423,13 @@ class MainController:
                 with self._array_lock:
                     self._displayed_array = self._array
                     self._array = self._solver.next_step(self._array)
+            yield self._displayed_array
+
+    def array_vision_generator(self):
+        while True:
+            with self._array_lock:
+                self._displayed_array = self._array
+                self._array = self._array.copy()
             yield self._displayed_array
 
     def reset(self, height, width, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
@@ -541,6 +557,8 @@ class MainController:
             array.extend(lines)
         with self._array_lock:
             self._array = np.array(array, dtype=np.uint32)
+            with self._grain_history_lock:
+                self._grain_history.set_log(eval(log))
         self.next_step()
 
 
