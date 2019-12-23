@@ -348,13 +348,13 @@ class GrainHistory:
             self._present_log_entry.add(grain)
 
     def new_phase(self):
-        present_log = sorted(self._present_log_entry)
+        present_log = tuple(sorted(self._present_log_entry))
         if present_log:
             self._log.append(present_log)
         self._present_log_entry = set()
 
     def get_log(self):
-        present_log = sorted(self._present_log_entry)
+        present_log = self._present_log_entry
         log = deepcopy(self._log)
         if present_log:
             log.append(present_log)
@@ -363,7 +363,7 @@ class GrainHistory:
     def remove_grains(self, grains):
         grains = set(grains)
         for i, log_entry in enumerate(self._log):
-            self._log[i] = sorted(set(log_entry) - grains)
+            self._log[i] = tuple(sorted(set(log_entry) - grains))
         self._present_log_entry -= grains
 
     def clear(self):
@@ -512,13 +512,17 @@ class MainController:
             return self._delay
 
     def save(self, filename):
+        mode = "single"
         with self._array_lock:
             array = self._displayed_array
+            with self._grain_history_lock:
+                log = self._grain_history.get_log()
         if filename.endswith('.csv'):
             with open(filename, 'w') as file:
                 for row in array:
                     file.write(','.join((str(x) for x in row)))
                     file.write('\n')
+                file.write("#grains:{}:{}\n".format(log, mode))
         if filename.endswith('.png'):
             image = Image.fromarray(array, 'CMYK').convert('RGB')
             image.save(filename)
@@ -526,7 +530,14 @@ class MainController:
     def load(self, filename):
         array = []
         if filename.endswith('.csv'):
-            lines = (line.strip().split(',') for line in open(filename) if line.strip())
+            lines = (
+                line.strip().split(',')
+                for line in open(filename)
+                if line.strip() and not line.startswith('#grains'))
+            _, log, mode = next(
+                line.strip().split(':')
+                for line in open(filename)
+                if line.strip().startswith('#grains'))
             array.extend(lines)
         with self._array_lock:
             self._array = np.array(array, dtype=np.uint32)

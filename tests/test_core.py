@@ -308,7 +308,7 @@ class TestMainController:
                 [0, 0, 0],
                 [0, 0, 3]
             ]))
-        assert controller._grain_history.get_log() == [[3]]
+        assert controller._grain_history.get_log() == [(3,)]
 
     def test_select_fields(self):
         controller = core.MainController()
@@ -397,7 +397,7 @@ class TestMainController:
             ], dtype=np.uint32)
         filename = 'test.save.core.main.controller.csv'
         controller.save(filename)
-        lines = (line.strip().split(',') for line in open(filename) if line.strip())
+        lines = (line.strip().split(',') for line in open(filename) if line.strip() and not line.startswith('#grains'))
         os.remove(filename)
         array = []
         array.extend(lines)
@@ -408,6 +408,7 @@ class TestMainController:
         filecontent = """1,1,1
 2,1,2
 3,1,1
+#grains:[]:single
 """
         filename = 'test.load.core.main.controller.csv'
         with open(filename, 'w') as f:
@@ -568,7 +569,7 @@ class TestGrainHistory:
     def test_log_grains(self):
         history = core.GrainHistory()
         history.log_grains([1,2,4])
-        assert history.get_log() == [[1, 2, 4]]
+        assert history.get_log() == [{1, 2, 4}]
 
     def test_new_grain(self):
         history = core.GrainHistory()
@@ -579,7 +580,7 @@ class TestGrainHistory:
         history.log_grain(4)
         history.log_grain(1)
         history.new_phase()
-        assert history._log == [[3, 5], [1, 4]]
+        assert history._log == [(3, 5), (1, 4)]
 
     def test_get_history(self):
         history = core.GrainHistory()
@@ -588,9 +589,9 @@ class TestGrainHistory:
         history.new_phase()
         history.log_grain(4)
         history.log_grain(1)
-        assert history.get_log() == [[3, 5], [1, 4]]
+        assert history.get_log() == [(3, 5), {1, 4}]
         history.log_grain(2)
-        assert history.get_log() == [[3, 5], [1, 2, 4]]
+        assert history.get_log() == [(3, 5), {1, 2, 4}]
 
     def test_clear_history(self):
         history = core.GrainHistory()
@@ -606,7 +607,7 @@ class TestGrainHistory:
         history.new_phase()
         history.log_grains([4, 5, 6])
         history.remove_grains([1, 4])
-        assert history.get_log() == [[2, 3], [5, 6]]
+        assert history.get_log() == [(2, 3), {5, 6}]
 
 
 class TestSeedSelector:
