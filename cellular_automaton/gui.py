@@ -408,7 +408,6 @@ class Body(tk.Frame):
             values['inclusion_number'],
             values['inclusion_min_radius'],
             values['inclusion_max_radius'])
-        self._controller.next_step()
 
     def update(self):
         boundary = self.radioMenu.get_boundary()

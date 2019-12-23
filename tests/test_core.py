@@ -1,6 +1,7 @@
 import numpy as np
 import cellular_automaton.core as core
 import os
+from copy import deepcopy
 
 class TestNeighborhood:
     def test_moore(self):
@@ -260,20 +261,21 @@ class TestMainController:
         array = next(arrays)
         assert np.array_equal(array, np.zeros((3, 3), np.int32))
 
-    def test_array_vision_generator(self):
+    def test_array_solver_function(self):
         controller = core.MainController()
-        arrays = controller.array_vision_generator()
         array = np.array([
-            [1, 0, 3],
+            [1, 0, 0],
             [0, 0, 0],
-            [1, 0, 0]
+            [0, 0, 0]
         ], dtype=np.uint32)
+        next_array = controller._array_solver_function(array)
+        assert np.array_equal(next_array, np.ones((3, 3), dtype=np.uint32))
 
-        controller._array = array
-        next_array = next(arrays)
-        assert np.array_equal(next_array, array)
-        next_array = next(arrays)
-        assert np.array_equal(next_array, array)
+    def test_set_loop_mode(self):
+        controller = core.MainController()
+        assert controller._loop_mode_function == controller._array_solver_function
+        controller._set_loop_mode('vision')
+        assert controller._loop_mode_function == deepcopy
 
     def test_reset(self):
         controller = core.MainController()
@@ -378,6 +380,11 @@ class TestMainController:
         controller._loop_gate.clear()
         controller.next_step()
         assert controller._loop_gate.is_set()
+
+    def test_next_vision_step(self):
+        controller = core.MainController()
+        controller.next_vision_step()
+        assert controller._loop_mode_function == deepcopy
 
     def test_start_stop(self):
         controller = core.MainController()
@@ -632,6 +639,11 @@ class TestGrainHistory:
         assert history._log == [(1, 2, 3)]
         history.set_log([(1, 2, 3), (4, 5)])
         assert history._log == [(1, 2, 3), (4, 5)]
+
+    def test_get_flattened_closed_phases(self):
+        history = core.GrainHistory()
+        history.set_log([(1, 2, 3), (4, 5, 6), {7, 8}])
+        assert tuple(history.get_flattened_closed_phases()) == (1, 2, 3, 4, 5 ,6)
 
 class TestSeedSelector:
     def test_toggle_grain(self):

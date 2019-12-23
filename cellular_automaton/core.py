@@ -379,6 +379,8 @@ class GrainHistory:
         else:
             self._log = deepcopy(history)
 
+    def get_flattened_closed_phases(self):
+        return (x for log_entry in self._log for x in log_entry)
 
 class SeedSelector:
     def __init__(self):
@@ -410,6 +412,8 @@ class MainController:
         self._loop_on = False
         self._loop_lock = threading.Lock()
         self._loop_gate = threading.Event()
+        self._loop_mode_lock = threading.Lock()
+        self._loop_mode_function = self._array_solver_function
         self._delay = None
         self._delay_lock = threading.Lock()
         self._grain_history = GrainHistory()
@@ -417,19 +421,24 @@ class MainController:
         self._seed_selector = SeedSelector()
         self._seed_selector_lock = threading.Lock()
 
+    def _array_solver_function(self, array):
+        with self._solver_lock:
+            return self._solver.next_step(array)
+
+    def _set_loop_mode(self, mode):
+        with self._loop_mode_lock:
+            if mode == 'vision':
+                self._loop_mode_function = deepcopy
+            elif mode == 'generation':
+                self._loop_mode_function = self._array_solver_function
+
     def array_generator(self):
         while True:
-            with self._solver_lock:
+            with self._loop_mode_lock:
                 with self._array_lock:
                     self._displayed_array = self._array
-                    self._array = self._solver.next_step(self._array)
-            yield self._displayed_array
-
-    def array_vision_generator(self):
-        while True:
-            with self._array_lock:
-                self._displayed_array = self._array
-                self._array = self._array.copy()
+                    self._array = self._loop_mode_function(self._array)
+            self._set_loop_mode('generation')
             yield self._displayed_array
 
     def reset(self, height, width, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
@@ -441,12 +450,14 @@ class MainController:
             with self._grain_history_lock:
                 self._grain_history.clear()
                 self._grain_history.log_grains(added_seeds)
+        self.next_vision_step()
 
     def clear(self):
         with self._array_lock:
             self._array = np.zeros(self._array.shape)
         with self._grain_history_lock:
             self._grain_history.clear()
+        self.next_vision_step()
 
     def select_field(self, field):
         if field:
@@ -466,6 +477,7 @@ class MainController:
             self._array_builder.remove_fields(selected)
             self._grain_history.remove_grains(selected)
             self._array = self._array_builder.get_array()
+        self.next_vision_step()
 
     def reseed(self, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
         with self._array_lock:
@@ -475,6 +487,7 @@ class MainController:
                 self._grain_history.log_grains(added_seeds)
             self._array_builder.add_inclusions(inclusion_num, inc_min_radius, inc_max_radius)
             self._array = self._array_builder.get_array()
+        self.next_vision_step()
 
     def new_phase(self):
         with self._grain_history_lock:
@@ -483,6 +496,7 @@ class MainController:
         with self._solver_lock:
             if log:
                 self._solver.add_ignored_ids(log[-1])
+        self.next_vision_step()
 
     def update_solver(self, neighborhood, boundary, state="simple-random-standard"):
         with self._solver_lock:
@@ -509,6 +523,10 @@ class MainController:
 
     def next_step(self):
         self._loop_gate.set()
+
+    def next_vision_step(self):
+        self._set_loop_mode('vision')
+        self.next_step()
 
     def start_stop(self):
         with self._loop_lock:
@@ -557,9 +575,13 @@ class MainController:
             array.extend(lines)
         with self._array_lock:
             self._array = np.array(array, dtype=np.uint32)
+            log = eval(log)
             with self._grain_history_lock:
-                self._grain_history.set_log(eval(log))
-        self.next_step()
+                self._grain_history.set_log(log)
+                ignored_ids =  self._grain_history.get_flattened_closed_phases()
+            with self._solver_lock:
+                self._solver.add_ignored_ids(ignored_ids)
+        self.next_vision_step()
 
 
 class ArrayBuilder:
