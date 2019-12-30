@@ -305,6 +305,37 @@ class Inclusions(tk.Frame):
         self.inclusionMaxRadiusEntry.grid(row=2, column=1, sticky=tk.E)
 
 
+class PhaseMenu(tk.Frame):
+    def __init__(self, controller, *args, **kwargs):
+        super().__init__(controller, *args, **kwargs)
+        self._controller = controller
+        self.columnconfigure(0, weight=1)
+
+        self.phaseMenuLabel = tk.Label(self, text="Phase menu")
+        self.phaseMenuLabel.grid(row=0, column=0, sticky= tk.W+tk.E)
+
+        self.phaseVar = tk.StringVar(self)
+        self.phaseVar.set('single')
+
+        self.phaseSingleRadio = tk.Radiobutton(
+            self,
+            text="Single phase",
+            variable=self.phaseVar,
+            value="single"
+        )
+        self.phaseSingleRadio.grid(row=1, column=0, sticky=tk.W)
+        self.phaseMultiRadio = tk.Radiobutton(
+            self,
+            text="Multi phase",
+            variable=self.phaseVar,
+            value="multi"
+        )
+        self.phaseMultiRadio.grid(row=2, column=0, sticky=tk.W)
+
+    def get_phase(self):
+        return self.phaseVar.get()
+
+
 class ResetMenu(tk.Frame):
     def __init__(self, controller, *args, **kwargs):
         super().__init__(controller, *args, **kwargs)
@@ -375,8 +406,15 @@ class Body(tk.Frame):
         self.separator_1 = ttk.Separator(self)
         self.separator_1.grid(row=3, column=0, sticky=tk.W+tk.E)
 
+        self.phaseMenu = PhaseMenu(self)
+        self.phaseMenu.grid(row=4, column=0, sticky=tk.W+tk.E)
+
+        self.separator_1 = ttk.Separator(self)
+        self.separator_1.grid(row=5, column=0, sticky=tk.W+tk.E)
+
         self.resetMenu = ResetMenu(self)
-        self.resetMenu.grid(row=3, column=0, sticky=tk.W+tk.E)
+        self.resetMenu.grid(row=6, column=0, sticky=tk.W+tk.E)
+
 
     def start_stop(self):
         self._controller.start_stop()
@@ -426,8 +464,9 @@ class Body(tk.Frame):
     def save(self):
         files = [('CSV', '*.csv'), ('PNG', '*.png')]
         filename = filedialog.asksaveasfilename(filetypes=files)
+        mode = self.phaseMenu.get_phase()
         if filename:
-            self._controller.save(filename)
+            self._controller.save(filename, mode)
 
     def load(self):
         files = [('CSV', '*.csv')]

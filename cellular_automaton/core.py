@@ -549,8 +549,7 @@ class MainController:
         with self._delay_lock:
             return self._delay
 
-    def save(self, filename):
-        mode = "single"
+    def save(self, filename, mode="single"):
         with self._array_lock:
             array = self._displayed_array
             with self._grain_history_lock:
