@@ -450,7 +450,7 @@ class MainController:
             with self._grain_history_lock:
                 self._grain_history.clear()
                 self._grain_history.log_grains(added_seeds)
-        self.next_vision_step()
+        self.next_step()
 
     def clear(self):
         with self._array_lock:
@@ -470,6 +470,8 @@ class MainController:
 
     def remove_selected_fields(self):
         with self._array_lock:
+            if self._displayed_array is not None:
+                self._array = self._displayed_array
             self._array_builder.set_array(self._array)
             with self._seed_selector_lock:
                 selected = self._seed_selector.get_selected()
@@ -477,17 +479,19 @@ class MainController:
             self._array_builder.remove_fields(selected)
             self._grain_history.remove_grains(selected)
             self._array = self._array_builder.get_array()
-        self.next_vision_step()
+        self.next_step()
 
     def reseed(self, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
         with self._array_lock:
+            if self._displayed_array is not None:
+                self._array = self._displayed_array
             self._array_builder.set_array(self._array)
             added_seeds = self._array_builder.add_seed(seed_num)
             with self._grain_history_lock:
                 self._grain_history.log_grains(added_seeds)
             self._array_builder.add_inclusions(inclusion_num, inc_min_radius, inc_max_radius)
             self._array = self._array_builder.get_array()
-        self.next_vision_step()
+        self.next_step()
 
     def new_phase(self):
         with self._grain_history_lock:
@@ -581,7 +585,7 @@ class MainController:
                 ignored_ids =  self._grain_history.get_flattened_closed_phases()
             with self._solver_lock:
                 self._solver.add_ignored_ids(ignored_ids)
-        self.next_vision_step()
+        self.next_step()
 
 
 class ArrayBuilder:
