@@ -454,10 +454,10 @@ class MainController:
 
     def clear(self):
         with self._array_lock:
-            self._array = np.zeros(self._array.shape)
+            self._array = np.zeros(self._array.shape, dtype=np.uint32)
         with self._grain_history_lock:
             self._grain_history.clear()
-        self.next_vision_step()
+        self.next_step()
 
     def select_field(self, field):
         if field:
@@ -491,6 +491,7 @@ class MainController:
                 self._grain_history.log_grains(added_seeds)
             self._array_builder.add_inclusions(inclusion_num, inc_min_radius, inc_max_radius)
             self._array = self._array_builder.get_array()
+            from pprint import PrettyPrinter
         self.next_step()
 
     def new_phase(self):
