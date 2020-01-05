@@ -93,6 +93,18 @@ class TestSolver:
         solver.add_ignored_ids([5, 6, 7])
         assert solver._state_solver._ignored_ids == {0, 5, 6, 7, 0xffffffff}
 
+    def test_get_statistics(self):
+        neighborhood = core.MooreNeighborhood()
+        state_solver = core.SimpleStateSolver()
+        boundary = core.AbsorbBoundary()
+        solver = core.Solver(neighborhood, boundary, state_solver)
+        array = np.array([
+            [1,1,1,1],
+            [1,1,1,1],
+            [1,1,1,1],
+            [1,1,1,1]], dtype=np.uint32)
+        length = solver.get_boundary_length(array)
+        assert length == 6
 
 class TestSimpleStateSolver:
     def test_next_elem(self):
@@ -419,7 +431,7 @@ class TestMainController:
             ], dtype=np.uint32)
         filename = 'test.save.core.main.controller.csv'
         controller.save(filename)
-        lines = (line.strip().split(',') for line in open(filename) if line.strip() and not line.startswith('#grains'))
+        lines = (line.strip().split(',') for line in open(filename) if line.strip() and not line.startswith('#'))
         os.remove(filename)
         array = []
         array.extend(lines)
@@ -463,6 +475,21 @@ class TestMainController:
                 [2, 0, 3]
             ]))
 
+    def test_get_statistcs(self):
+        controller = core.MainController()
+        controller._displayed_array = np.array([
+            [2, 2, 3, 3, 3],
+            [2, 2, 3, 3, 3],
+            [2, 2, 3, 3, 3],
+            [2, 2, 3, 3, 3]
+        ], dtype=np.uint32)
+        controller._grain_history.log_grains([2, 3])
+        controller._solver = core.SolverCreator().create("Moore", "periodic")
+        statistics = controller.get_statistics()
+        assert statistics == {
+            "grain_boundary_length": 8,
+            "average_size": 10
+        }
 
 class TestArrayBuilder:
     def test_get_array(self):

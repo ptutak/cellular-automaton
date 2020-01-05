@@ -268,6 +268,7 @@ class Solver:
         self._neighborhood = neighborhood
         self._state_solver = state_solver
         self._boundary = boundary
+        self._moore = MooreNeighborhood()
 
     def _get_neighbor_values(self, array, index):
         height = len(array)
@@ -279,6 +280,50 @@ class Solver:
             index_value,
             (self._boundary.get_value(x, array, height, width)
              for x in self._neighborhood.get_neighbors(index[0], index[1])))
+
+    def _get_full_neighbor_values(self, array, index):
+        height = len(array)
+        width = len(array[0])
+        index_value = array[index]
+        return (
+            index_value,
+            (self._boundary.get_value(x, array, height, width)
+             for x in self._moore.get_neighbors(index[0], index[1])))
+
+
+    def get_bound_array(self, array):
+        height = array.shape[0]
+        width = array.shape[1]
+        elements = (
+            (x, y) for x in range(height) for y in range(width)
+        )
+        elements_and_neighbors = (
+            self._get_full_neighbor_values(array, x)
+            for x in elements
+        )
+        boundaries = []
+        for elem, neighbors in elements_and_neighbors:
+            set_neighbors = set(neighbors)
+            if set_neighbors - {elem}:
+                boundaries.append(1)
+            else:
+                boundaries.append(0)
+        bound_array = np.array(boundaries, dtype=np.uint32)
+        bound_array.resize(array.shape)
+        return bound_array
+
+    def get_boundary_length(self, array):
+        bound_array = self.get_bound_array(array)
+        height = bound_array.shape[0]
+        width = bound_array.shape[1]
+        elements = (
+            bound_array[(x, y)] for x in range(height) for y in range(width)
+        )
+        bound_length = 0
+        for elem in elements:
+            if elem:
+                bound_length += 1
+        return bound_length // 2
 
     def add_ignored_ids(self, ids):
         self._state_solver.ignore_ids(ids)
@@ -439,7 +484,7 @@ class MainController:
                     self._displayed_array = self._array
                     self._array = self._loop_mode_function(self._array)
             self._set_loop_mode('generation')
-            yield self._displayed_array
+            yield deepcopy(self._displayed_array)
 
     def reset(self, height, width, seed_num, inclusion_num=0, inc_min_radius=0, inc_max_radius=0):
         self._array_builder.new_array(height, width)
@@ -550,6 +595,9 @@ class MainController:
         with self._delay_lock:
             return self._delay
 
+    def get_boundary_array(self):
+        return self._solver.get_bound_array(self._displayed_array)
+
     def save(self, filename, mode="single"):
         with self._array_lock:
             array = self._displayed_array
@@ -561,6 +609,11 @@ class MainController:
                     file.write(','.join((str(x) for x in row)))
                     file.write('\n')
                 file.write("#grains:{}:{}\n".format(log, mode))
+                bound_array = self.get_boundary_array()
+                for row in bound_array:
+                    file.write("#b ")
+                    file.write(','.join((str(x) for x in row)))
+                    file.write('\n')
         if filename.endswith('.png'):
             image = Image.fromarray(array, 'CMYK').convert('RGB')
             image.save(filename)
@@ -571,7 +624,7 @@ class MainController:
             lines = (
                 line.strip().split(',')
                 for line in open(filename)
-                if line.strip() and not line.startswith('#grains'))
+                if line.strip() and not line.startswith('#'))
             _, log, mode = next(
                 line.strip().split(':')
                 for line in open(filename)
@@ -587,6 +640,19 @@ class MainController:
                 self._solver.add_ignored_ids(ignored_ids)
         self.next_step()
 
+    def get_statistics(self):
+        with self._array_lock:
+            with self._solver_lock:
+                length = self._solver.get_boundary_length(self._displayed_array)
+                log = self._grain_history.get_log()
+                all_ids = []
+                for phase in log:
+                    all_ids.extend(list(phase))
+                average_size = self._displayed_array.shape[0] * self._displayed_array.shape[1] // len(all_ids)
+                return {
+                    "average_size": average_size,
+                    "grain_boundary_length": length
+                }
 
 class ArrayBuilder:
     def __init__(self,
