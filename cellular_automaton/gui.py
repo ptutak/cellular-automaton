@@ -2,6 +2,7 @@ import asyncio
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.filedialog as filedialog
+from tkinter.messagebox import showinfo
 import threading
 from time import sleep
 from PIL import Image, ImageTk
@@ -409,12 +410,21 @@ class Body(tk.Frame):
         self.phaseMenu = PhaseMenu(self)
         self.phaseMenu.grid(row=4, column=0, sticky=tk.W+tk.E)
 
-        self.separator_1 = ttk.Separator(self)
-        self.separator_1.grid(row=5, column=0, sticky=tk.W+tk.E)
+        self.separator_2 = ttk.Separator(self)
+        self.separator_2.grid(row=5, column=0, sticky=tk.W+tk.E)
 
         self.resetMenu = ResetMenu(self)
         self.resetMenu.grid(row=6, column=0, sticky=tk.W+tk.E)
 
+        self.separator_3 = ttk.Separator(self)
+        self.separator_3.grid(row=7, column=0, sticky=tk.W+tk.E)
+
+        self.statButton = tk.Button(self, text="Statistics", command=self.statistics)
+        self.statButton.grid(row=8, column=0, sticky=tk.W+tk.E)
+
+    def statistics(self):
+        stats = self._controller.get_statistics()
+        showinfo("Statistics", message=str(stats))
 
     def start_stop(self):
         self._controller.start_stop()
