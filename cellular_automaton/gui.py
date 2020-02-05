@@ -1,9 +1,7 @@
-import asyncio
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.filedialog as filedialog
 from tkinter.messagebox import showinfo
-import threading
 from time import sleep
 from PIL import Image, ImageTk
 

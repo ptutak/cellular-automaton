@@ -3,7 +3,6 @@ import threading
 from copy import deepcopy
 from abc import ABC, abstractmethod
 from PIL import Image
-from fractions import Fraction
 
 
 class Neighborhood(ABC):
